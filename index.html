@@ -1,0 +1,1221 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#888888">
+    <link rel="manifest" href="manifest.json">
+    <title>Трекер электроскутера</title>
+    <style>
+        :root {
+            --bg: #f0f4f8;
+            --card: #ffffff;
+            --text: #0b1a33;
+            --text-secondary: #5e6f8d;
+            --border: #dce2ec;
+            --input-bg: #fafcff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.06);
+            --btn-primary: #3b82f6;
+            --btn-success: #22c55e;
+            --btn-danger: #ef4444;
+            --battery-bg: #e2e8f0;
+            --tab-active: #3b82f6;
+            --tab-inactive: #94a3b8;
+            --toast-bg: #1e293b;
+            --toast-text: #f8fafc;
+            --modal-overlay: rgba(0,0,0,0.5);
+        }
+        body.dark {
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+            --input-bg: #2d3a4f;
+            --shadow: 0 4px 12px rgba(0,0,0,0.3);
+            --btn-primary: #3b82f6;
+            --btn-success: #22c55e;
+            --btn-danger: #ef4444;
+            --battery-bg: #334155;
+            --tab-active: #60a5fa;
+            --tab-inactive: #64748b;
+            --toast-bg: #e2e8f0;
+            --toast-text: #0f172a;
+            --modal-overlay: rgba(0,0,0,0.7);
+        }
+
+        * { box-sizing: border-box; font-family: system-ui, -apple-system, sans-serif; }
+        body {
+            max-width: 420px;
+            margin: 0 auto;
+            padding: 12px;
+            background: var(--bg);
+            color: var(--text);
+            transition: background 0.25s, color 0.25s;
+            min-height: 100vh;
+        }
+        .card {
+            background: var(--card);
+            border-radius: 20px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 14px;
+            transition: background 0.25s;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .header h1 {
+            font-size: 20px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .theme-toggle {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 12px;
+            transition: background 0.2s;
+        }
+        .theme-toggle:hover { background: var(--border); }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 14px;
+            background: var(--border);
+            border-radius: 16px;
+            padding: 4px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 10px 0;
+            border: none;
+            background: transparent;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--tab-inactive);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .tab-btn.active {
+            background: var(--card);
+            color: var(--tab-active);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .stat-item {
+            background: var(--input-bg);
+            border-radius: 14px;
+            padding: 10px 4px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .battery-wrap { margin: 10px 0 6px; }
+        .battery-bar {
+            height: 10px;
+            background: var(--battery-bg);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .battery-fill {
+            height: 100%;
+            background: #22c55e;
+            border-radius: 10px;
+            transition: width 0.3s;
+            width: 100%;
+        }
+        .battery-fill.low { background: #ef4444; }
+        .battery-fill.medium { background: #eab308; }
+        .battery-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+        .input-group { margin: 10px 0; }
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        .input-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .input-row input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            font-size: 16px;
+            outline: none;
+            background: var(--input-bg);
+            color: var(--text);
+            transition: 0.2s;
+            min-width: 0;
+        }
+        .input-row input:focus { border-color: var(--btn-primary); }
+        .btn {
+            padding: 10px 16px;
+            background: var(--btn-primary);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-weight: 600;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-success { background: var(--btn-success); }
+        .btn-danger { background: var(--btn-danger); }
+        .btn-outline {
+            background: transparent;
+            color: var(--btn-primary);
+            border: 2px solid var(--btn-primary);
+        }
+        .btn-sm { padding: 6px 12px; font-size: 13px; }
+        .flex { display: flex; gap: 8px; flex-wrap: wrap; }
+        .flex .btn { flex: 1; }
+        .to-indicator {
+            background: var(--input-bg);
+            border-radius: 14px;
+            padding: 8px 14px;
+            margin-top: 8px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .to-indicator .to-label { color: var(--text-secondary); }
+        .to-indicator .to-value { font-weight: 700; }
+        .history {
+            max-height: 150px;
+            overflow-y: auto;
+            margin-top: 8px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+        .history-item .date { color: var(--text-secondary); }
+        .history-item .km { font-weight: 600; }
+        .history-item .correction { color: var(--btn-danger); }
+        .empty { color: var(--text-secondary); text-align: center; padding: 12px; }
+
+        .stats-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .stats-controls select {
+            padding: 8px 12px;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 15px;
+            flex: 1;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .stats-grid .stat-item { padding: 12px 4px; }
+        .stats-grid .stat-value { font-size: 20px; }
+        .stat-list .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+        .stat-list .stat-item .date { color: var(--text-secondary); }
+        .stat-list .stat-item .dist { font-weight: 600; }
+
+        .settings-group {
+            margin: 12px 0;
+        }
+        .settings-group label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .settings-group .hint {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+        .settings-group input,
+        .settings-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            font-size: 16px;
+            background: var(--input-bg);
+            color: var(--text);
+            outline: none;
+            transition: 0.2s;
+            font-family: inherit;
+        }
+        .settings-group input:focus,
+        .settings-group textarea:focus { border-color: var(--btn-primary); }
+        .settings-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .charge-slider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 6px;
+        }
+        .charge-slider input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            height: 6px;
+            background: var(--border);
+            border-radius: 6px;
+            outline: none;
+        }
+        .charge-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: var(--btn-primary);
+            border-radius: 50%;
+            cursor: pointer;
+        }
+        /* ИСПРАВЛЕННЫЙ БЛОК — теперь текст помещается всегда */
+        .charge-slider .charge-info {
+            font-weight: 600;
+            min-width: 70px;
+            text-align: left;
+            font-size: 14px;
+            white-space: nowrap;
+        }
+        .charge-slider .time-btn {
+            background: none;
+            border: none;
+            font-size: 22px;
+            cursor: pointer;
+            padding: 0 4px;
+        }
+        .charge-slider .time-btn:hover { opacity: 0.7; }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--toast-bg);
+            color: var(--toast-text);
+            padding: 10px 24px;
+            border-radius: 30px;
+            font-weight: 500;
+            font-size: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+            z-index: 999;
+        }
+        .toast.show { opacity: 1; }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: var(--modal-overlay);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            background: var(--card);
+            border-radius: 28px;
+            padding: 24px;
+            max-width: 320px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: modalIn 0.25s ease;
+        }
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal h2 {
+            margin: 0 0 16px;
+            font-size: 20px;
+            text-align: center;
+        }
+        .modal .input-row {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+        .modal .input-row > div {
+            flex: 1;
+            text-align: center;
+        }
+        .modal .input-row label {
+            display: block;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        .modal .input-row input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            background: var(--input-bg);
+            color: var(--text);
+            font-size: 18px;
+            text-align: center;
+            outline: none;
+        }
+        .modal .input-row input:focus { border-color: var(--btn-primary); }
+        .modal .btn {
+            width: 100%;
+            padding: 12px;
+            font-size: 17px;
+        }
+        .modal .btn-outline {
+            margin-top: 8px;
+        }
+
+        .hidden-input {
+            display: none;
+        }
+
+        .settings-section-title {
+            font-size: 16px;
+            font-weight: 700;
+            margin: 16px 0 8px 0;
+            color: var(--text-secondary);
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 4px;
+        }
+        .settings-section-title:first-of-type {
+            margin-top: 0;
+        }
+
+        @media (max-width: 360px) {
+            .stat-grid { grid-template-columns: 1fr 1fr; }
+            .stat-grid .stat-item:last-child { grid-column: span 2; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="toast" class="toast"></div>
+
+    <div class="modal-overlay" id="timeModal">
+        <div class="modal">
+            <h2>⏱ Время зарядки</h2>
+            <div class="input-row">
+                <div>
+                    <label for="modalHours">Часы</label>
+                    <input type="number" id="modalHours" min="0" max="24" value="0" step="1">
+                </div>
+                <div>
+                    <label for="modalMinutes">Минуты</label>
+                    <input type="number" id="modalMinutes" min="0" max="59" value="0" step="1">
+                </div>
+            </div>
+            <button class="btn" id="modalApplyBtn">✅ Применить</button>
+            <button class="btn btn-outline" id="modalCancelBtn">Отмена</button>
+        </div>
+    </div>
+
+    <div class="header">
+        <h1>🛵 Электроскутер</h1>
+        <div class="header-actions">
+            <button class="theme-toggle" id="themeToggle" aria-label="Переключить тему">🌙</button>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" data-tab="main">📊 Основная</button>
+        <button class="tab-btn" data-tab="stats">📈 Статистика</button>
+        <button class="tab-btn" data-tab="settings">⚙️ Настройки</button>
+    </div>
+
+    <!-- ======== ОСНОВНАЯ ======== -->
+    <div id="main-tab" class="tab-content active">
+        <div class="card">
+            <div class="stat-grid">
+                <div class="stat-item">
+                    <div class="stat-value" id="totalKm">0</div>
+                    <div class="stat-label">Общий пробег, км</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="lastTrip">0</div>
+                    <div class="stat-label">Последняя поездка, км</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="sinceCharge">0</div>
+                    <div class="stat-label">С последней зарядки, км</div>
+                </div>
+            </div>
+
+            <div class="battery-wrap">
+                <div class="battery-info">
+                    <span>🔋 Остаток хода</span>
+                    <span><strong id="remainKm">0</strong> км · <strong id="batteryPercent">0</strong>%</span>
+                </div>
+                <div class="battery-bar">
+                    <div class="battery-fill" id="batteryFill" style="width:100%;"></div>
+                </div>
+            </div>
+
+            <div class="input-group">
+                <label>📏 Пробег за поездку (км)</label>
+                <div class="input-row">
+                    <input type="number" id="tripInput" placeholder="Напр. 12.5" step="0.1" min="0">
+                    <button class="btn" id="addBtn">➕ Добавить</button>
+                    <button class="btn btn-outline btn-sm" id="undoBtn" title="Отменить последнюю">↩️</button>
+                </div>
+            </div>
+
+            <div class="input-group" style="margin-top:4px;">
+                <label>⚡ Добавить заряд</label>
+                <div class="charge-slider">
+                    <span>Добавить:</span>
+                    <input type="range" id="chargeAddSlider" min="0" max="100" value="0">
+                    <span class="charge-info" id="chargeAddInfo">0% (0 ч)</span>
+                    <button class="time-btn" id="timeModalOpenBtn" title="Ввести время зарядки">🕒</button>
+                </div>
+                <button class="btn btn-success" id="chargeBtn" style="width:100%; margin-top:6px;">🔌 Зарядил (прибавить этот %)</button>
+            </div>
+
+            <div class="to-indicator">
+                <span class="to-label">🛠 До ТО (интервал <span id="toIntervalDisplay">500</span> км):</span>
+                <span class="to-value" id="toRemain">—</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 style="font-size:17px; margin:0 0 6px;">📋 История</h2>
+            <div id="historyList" class="history">
+                <div class="empty">Пока нет записей</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== СТАТИСТИКА ======== -->
+    <div id="stats-tab" class="tab-content">
+        <div class="card">
+            <div class="stats-controls">
+                <select id="periodSelect">
+                    <option value="day">День</option>
+                    <option value="week" selected>Неделя</option>
+                    <option value="month">Месяц</option>
+                </select>
+            </div>
+
+            <div class="stats-grid" id="statsSummary">
+                <div class="stat-item"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Всего км</div></div>
+                <div class="stat-item"><div class="stat-value" id="statAvg">0</div><div class="stat-label">Средний за день</div></div>
+                <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">Поездок</div></div>
+                <div class="stat-item"><div class="stat-value" id="statMax">0</div><div class="stat-label">Макс. за день</div></div>
+            </div>
+
+            <div id="statsDetail" class="stat-list"></div>
+        </div>
+    </div>
+
+    <!-- ======== НАСТРОЙКИ ======== -->
+    <div id="settings-tab" class="tab-content">
+        <div class="card">
+            <h2 style="font-size:18px; margin:0 0 12px;">⚙️ Основные настройки</h2>
+
+            <div class="settings-group">
+                <label for="fullRangeSetting">Полный запас хода (км)</label>
+                <input type="number" id="fullRangeSetting" step="0.5" min="1" placeholder="Напр. 60">
+                <div class="hint">Расчётный пробег при 100% заряде</div>
+            </div>
+
+            <div class="settings-group">
+                <label for="chargeHoursSetting">Время полной зарядки (часы)</label>
+                <input type="number" id="chargeHoursSetting" step="0.1" min="0.1" placeholder="Напр. 4.0">
+                <div class="hint">Сколько часов требуется для зарядки с 0 до 100%</div>
+            </div>
+
+            <div class="settings-group">
+                <label for="toIntervalSetting">Интервал ТО (км)</label>
+                <input type="number" id="toIntervalSetting" step="10" min="10" placeholder="Напр. 500">
+                <div class="hint">Напоминание о техобслуживании через каждые N км</div>
+            </div>
+
+            <hr style="border-color:var(--border); margin:16px 0;">
+
+            <div class="settings-group">
+                <label>🔧 Корректировка одометра (км, +/-)</label>
+                <div class="input-row">
+                    <input type="number" id="correctionInput" placeholder="Напр. -5.2" step="0.1">
+                    <button class="btn btn-outline" id="correctionBtn">Применить</button>
+                </div>
+                <div class="hint">Влияет только на общий пробег, не меняет пробег с зарядки и остаток хода</div>
+            </div>
+
+            <hr style="border-color:var(--border); margin:16px 0;">
+
+            <div class="settings-group">
+                <label for="notesInput">📝 Заметки (на память)</label>
+                <textarea id="notesInput" placeholder="Напишите что угодно: дата замены колодок, номер телефона мастера, примечания..."></textarea>
+                <div class="hint">Сохраняются автоматически при вводе</div>
+            </div>
+
+            <hr style="border-color:var(--border); margin:16px 0;">
+
+            <div class="settings-section-title">📤 Экспорт данных</div>
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+                <button class="btn btn-outline btn-sm" id="exportCsvBtn" style="flex:1;">CSV</button>
+                <button class="btn btn-outline btn-sm" id="exportJsonBtn" style="flex:1;">JSON</button>
+            </div>
+            <div class="hint" style="margin-top: 4px;">Выгрузить все записи в файл</div>
+
+            <div class="settings-section-title" style="margin-top:20px;">📥 Импорт данных</div>
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+                <button class="btn btn-outline btn-sm" id="importCsvBtn" style="flex:1;">CSV</button>
+                <button class="btn btn-outline btn-sm" id="importJsonBtn" style="flex:1;">JSON</button>
+            </div>
+            <div class="hint" style="margin-top: 4px;">Восстановить данные из файла (заменит текущие)</div>
+            <input type="file" id="csvFileInput" class="hidden-input" accept=".csv">
+            <input type="file" id="jsonFileInput" class="hidden-input" accept=".json">
+
+            <button class="btn btn-danger" id="resetAllBtn" style="width:100%; margin-top:20px;">🗑 Сбросить все данные</button>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'scooter_tracker_data_v2';
+
+        function defaultData() {
+            return {
+                fullRange: 60,
+                chargeHoursFull: 4.0,
+                chargeOdometer: 0,
+                chargePercent: 100,
+                trips: [],
+                totalTrips: 0,
+                toInterval: 500,
+                lastToNotified: 0,
+                theme: 'light',
+                notes: ''
+            };
+        }
+
+        function loadData() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (raw) {
+                    const data = JSON.parse(raw);
+                    if (data.chargeHoursFull === undefined) data.chargeHoursFull = 4.0;
+                    if (data.chargePercent === undefined) data.chargePercent = 100;
+                    if (data.toInterval === undefined) data.toInterval = 500;
+                    if (data.lastToNotified === undefined) data.lastToNotified = 0;
+                    if (data.theme === undefined) data.theme = 'light';
+                    if (data.notes === undefined) data.notes = '';
+                    if (data.totalTrips === undefined) {
+                        data.totalTrips = data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
+                    }
+                    if (data.trips && data.trips.length && data.trips[0].type === undefined) {
+                        data.trips = data.trips.map(t => ({ ...t, type: 'trip' }));
+                        data.totalTrips = data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
+                    }
+                    return data;
+                }
+            } catch(e) {}
+            return defaultData();
+        }
+
+        function saveData(data) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        }
+
+        function calcTotal(trips) {
+            return trips.reduce((sum, t) => sum + t.distance, 0);
+        }
+
+        function calcBattery(data) {
+            const total = calcTotal(data.trips);
+            const drivenSinceCharge = data.totalTrips - data.chargeOdometer;
+            const effectiveRange = data.fullRange * (data.chargePercent / 100);
+            const remain = Math.max(0, effectiveRange - drivenSinceCharge);
+            const percent = data.fullRange > 0 ? Math.min(100, Math.max(0, (remain / data.fullRange) * 100)) : 0;
+            return { remain, percent, drivenSinceCharge, total };
+        }
+
+        function checkTO(data, total) {
+            const interval = data.toInterval;
+            if (interval <= 0) return null;
+            const next = Math.ceil((total + 0.001) / interval) * interval;
+            const remain = Math.max(0, next - total);
+            return { remain, next };
+        }
+
+        let toastTimer = null;
+        function showToast(text) {
+            const el = document.getElementById('toast');
+            el.textContent = text;
+            el.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+        }
+
+        function renderMain(data) {
+            const total = calcTotal(data.trips);
+            const battery = calcBattery(data);
+            const last = data.trips.length > 0 ? data.trips[data.trips.length-1] : null;
+
+            document.getElementById('totalKm').textContent = total.toFixed(1);
+            document.getElementById('lastTrip').textContent = last ? last.distance.toFixed(1) : '0';
+            document.getElementById('sinceCharge').textContent = battery.drivenSinceCharge.toFixed(1);
+
+            document.getElementById('remainKm').textContent = battery.remain.toFixed(1);
+            document.getElementById('batteryPercent').textContent = Math.round(battery.percent);
+            const fill = document.getElementById('batteryFill');
+            fill.style.width = battery.percent + '%';
+            fill.className = 'battery-fill' + (battery.percent < 20 ? ' low' : battery.percent < 50 ? ' medium' : '');
+
+            const toInfo = checkTO(data, total);
+            const toRemainEl = document.getElementById('toRemain');
+            const toIntervalDisplay = document.getElementById('toIntervalDisplay');
+            toIntervalDisplay.textContent = data.toInterval;
+            if (toInfo) {
+                toRemainEl.textContent = toInfo.remain.toFixed(1) + ' км';
+                if (toInfo.remain <= 0) {
+                    toRemainEl.style.color = 'var(--btn-danger)';
+                    if (data.lastToNotified < total) {
+                        showToast('🛠 Пора проверить тормоза и смазать подшипники!');
+                        data.lastToNotified = total;
+                        saveData(data);
+                    }
+                } else {
+                    toRemainEl.style.color = 'var(--text)';
+                }
+            } else {
+                toRemainEl.textContent = '—';
+            }
+
+            const historyDiv = document.getElementById('historyList');
+            if (data.trips.length === 0) {
+                historyDiv.innerHTML = '<div class="empty">Пока нет записей</div>';
+            } else {
+                const reversed = [...data.trips].reverse();
+                let html = '';
+                reversed.slice(0, 30).forEach(trip => {
+                    const d = new Date(trip.date);
+                    const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                    const isCorrection = trip.type === 'correction';
+                    const sign = isCorrection ? (trip.distance >= 0 ? '+' : '') : '+';
+                    const cls = isCorrection ? 'correction' : '';
+                    html += `<div class="history-item">
+                        <span class="date">${dateStr}${isCorrection ? ' 🔧' : ''}</span>
+                        <span class="km ${cls}">${sign}${trip.distance.toFixed(1)} км</span>
+                    </div>`;
+                });
+                historyDiv.innerHTML = html;
+            }
+
+            updateChargeAddInfo(data);
+        }
+
+        function updateChargeAddInfo(data) {
+            const slider = document.getElementById('chargeAddSlider');
+            const addPercent = parseInt(slider.value);
+            const hours = (addPercent / 100) * data.chargeHoursFull;
+            document.getElementById('chargeAddInfo').textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
+        }
+
+        function renderStats(data) {
+            const period = document.getElementById('periodSelect').value;
+            const tripEntries = data.trips.filter(t => t.type === 'trip');
+            const dayMap = new Map();
+            tripEntries.forEach(t => {
+                const d = new Date(t.date);
+                const key = d.toISOString().slice(0,10);
+                if (!dayMap.has(key)) dayMap.set(key, 0);
+                dayMap.set(key, dayMap.get(key) + t.distance);
+            });
+            const sortedDays = Array.from(dayMap.entries()).sort((a,b) => a[0].localeCompare(b[0]));
+            const now = new Date();
+            const cutoff = new Date(now);
+            if (period === 'day') cutoff.setDate(now.getDate() - 1);
+            else if (period === 'week') cutoff.setDate(now.getDate() - 7);
+            else if (period === 'month') cutoff.setMonth(now.getMonth() - 1);
+
+            const filtered = sortedDays.filter(([dateStr]) => dateStr >= cutoff.toISOString().slice(0,10));
+            let sum = 0, count = 0, max = 0;
+            filtered.forEach(([_, dist]) => {
+                sum += dist;
+                count++;
+                if (dist > max) max = dist;
+            });
+            const avg = count > 0 ? sum / count : 0;
+
+            document.getElementById('statTotal').textContent = sum.toFixed(1);
+            document.getElementById('statAvg').textContent = avg.toFixed(1);
+            document.getElementById('statCount').textContent = count;
+            document.getElementById('statMax').textContent = max.toFixed(1);
+
+            const detailDiv = document.getElementById('statsDetail');
+            if (filtered.length === 0) {
+                detailDiv.innerHTML = '<div class="empty">Нет данных за выбранный период</div>';
+            } else {
+                let html = '';
+                filtered.forEach(([dateStr, dist]) => {
+                    html += `<div class="stat-item">
+                        <span class="date">${dateStr}</span>
+                        <span class="dist">${dist.toFixed(1)} км</span>
+                    </div>`;
+                });
+                detailDiv.innerHTML = html;
+            }
+        }
+
+        function renderSettings(data) {
+            document.getElementById('fullRangeSetting').value = data.fullRange;
+            document.getElementById('chargeHoursSetting').value = data.chargeHoursFull;
+            document.getElementById('toIntervalSetting').value = data.toInterval;
+            document.getElementById('notesInput').value = data.notes || '';
+        }
+
+        function renderAll() {
+            const data = loadData();
+            renderMain(data);
+            renderSettings(data);
+            const statsTab = document.getElementById('stats-tab');
+            if (statsTab.classList.contains('active')) {
+                renderStats(data);
+            }
+        }
+
+        // ---- Действия ----
+        function addTrip(distance) {
+            if (distance <= 0) {
+                showToast('Введите положительное число');
+                return;
+            }
+            const data = loadData();
+            data.trips.push({ date: Date.now(), distance: distance, type: 'trip' });
+            data.totalTrips += distance;
+            saveData(data);
+            renderAll();
+            document.getElementById('tripInput').value = '';
+            showToast(`➕ Добавлено ${distance.toFixed(1)} км`);
+        }
+
+        function undoLast() {
+            const data = loadData();
+            if (data.trips.length === 0) {
+                showToast('Нет записей для отмены');
+                return;
+            }
+            const removed = data.trips.pop();
+            if (removed.type === 'trip') {
+                data.totalTrips -= removed.distance;
+            }
+            saveData(data);
+            renderAll();
+            showToast(`↩️ Отменено: ${removed.distance.toFixed(1)} км`);
+        }
+
+        function applyCorrection(value) {
+            if (value === 0) {
+                showToast('Введите ненулевое значение');
+                return;
+            }
+            const data = loadData();
+            data.trips.push({ date: Date.now(), distance: value, type: 'correction' });
+            // totalTrips не меняем
+            saveData(data);
+            renderAll();
+            document.getElementById('correctionInput').value = '';
+            showToast(`🔧 Коррекция ${value >= 0 ? '+' : ''}${value.toFixed(1)} км (общий пробег изменён)`);
+        }
+
+        function chargeAdd() {
+            const data = loadData();
+            const addPercent = parseInt(document.getElementById('chargeAddSlider').value);
+            if (addPercent <= 0) {
+                showToast('Выберите добавляемый процент (больше 0)');
+                return;
+            }
+            const currentPercent = calcBattery(data).percent;
+            let newPercent = Math.min(100, currentPercent + addPercent);
+            if (newPercent === currentPercent) {
+                showToast('Уже 100% заряда');
+                return;
+            }
+            data.chargePercent = newPercent;
+            data.chargeOdometer = data.totalTrips;
+            saveData(data);
+            renderAll();
+            document.getElementById('chargeAddSlider').value = 0;
+            updateChargeAddInfo(data);
+            showToast(`🔌 Заряд увеличен до ${newPercent}% (добавлено ${addPercent}%)`);
+        }
+
+        // ---- Ввод времени зарядки ----
+        function openTimeModal() {
+            document.getElementById('timeModal').classList.add('open');
+            const currentPercent = parseInt(document.getElementById('chargeAddSlider').value);
+            const data = loadData();
+            const totalHours = (currentPercent / 100) * data.chargeHoursFull;
+            const hours = Math.floor(totalHours);
+            const minutes = Math.round((totalHours - hours) * 60);
+            document.getElementById('modalHours').value = hours;
+            document.getElementById('modalMinutes').value = Math.min(minutes, 59);
+        }
+
+        function closeTimeModal() {
+            document.getElementById('timeModal').classList.remove('open');
+        }
+
+        function applyTimeToSlider() {
+            const hours = parseInt(document.getElementById('modalHours').value) || 0;
+            const minutes = parseInt(document.getElementById('modalMinutes').value) || 0;
+            const totalMinutes = hours * 60 + minutes;
+            if (totalMinutes <= 0) {
+                showToast('Введите положительное время');
+                return;
+            }
+            const data = loadData();
+            const fullMinutes = data.chargeHoursFull * 60;
+            let percent = Math.min(100, (totalMinutes / fullMinutes) * 100);
+            percent = Math.round(percent);
+            if (percent < 1) percent = 1;
+            document.getElementById('chargeAddSlider').value = percent;
+            updateChargeAddInfo(data);
+            closeTimeModal();
+            showToast(`⏱ Установлено ${hours}ч ${minutes}мин → ${percent}%`);
+        }
+
+        // ---- Заметки ----
+        function saveNotes() {
+            const notes = document.getElementById('notesInput').value;
+            const data = loadData();
+            data.notes = notes;
+            saveData(data);
+        }
+
+        // ---- Настройки ----
+        function saveSetting(field, value) {
+            const data = loadData();
+            data[field] = value;
+            saveData(data);
+            renderAll();
+            if (field === 'fullRange' || field === 'chargeHoursFull') {
+                renderMain(data);
+            }
+            showToast(`Настройка сохранена`);
+        }
+
+        function resetAllData() {
+            if (confirm('Удалить все данные о пробеге, зарядках и настройках?')) {
+                const data = defaultData();
+                const oldData = loadData();
+                data.theme = oldData.theme || 'light';
+                saveData(data);
+                renderAll();
+                showToast('Все данные сброшены');
+            }
+        }
+
+        // ---- Экспорт ----
+        function exportCSV() {
+            const data = loadData();
+            if (data.trips.length === 0) { showToast('Нет данных для экспорта'); return; }
+            let csv = 'Дата,Тип,Расстояние(км)\n';
+            data.trips.forEach(t => {
+                const d = new Date(t.date);
+                const dateStr = d.toISOString().slice(0,10) + ' ' + d.toTimeString().slice(0,8);
+                const type = t.type === 'correction' ? 'Коррекция' : 'Поездка';
+                csv += `${dateStr},${type},${t.distance.toFixed(1)}\n`;
+            });
+            downloadFile(csv, 'scooter_data.csv', 'text/csv');
+            showToast('📤 CSV экспортирован');
+        }
+
+        function exportJSON() {
+            const data = loadData();
+            if (data.trips.length === 0) { showToast('Нет данных для экспорта'); return; }
+            const json = JSON.stringify(data, null, 2);
+            downloadFile(json, 'scooter_data.json', 'application/json');
+            showToast('📄 JSON экспортирован');
+        }
+
+        function downloadFile(content, filename, mime) {
+            const blob = new Blob([content], { type: mime + ';charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }
+
+        // ---- Импорт ----
+        function importCSV(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const lines = text.split('\n').filter(line => line.trim() !== '');
+                    const header = lines[0];
+                    const data = loadData();
+                    const newTrips = [];
+                    let totalTrips = 0;
+                    let startIndex = 0;
+                    if (header.includes('Дата') || header.includes('Date')) {
+                        startIndex = 1;
+                    }
+                    for (let i = startIndex; i < lines.length; i++) {
+                        const parts = lines[i].split(',');
+                        if (parts.length < 3) continue;
+                        const dateStr = parts[0].trim();
+                        const typeStr = parts[1].trim();
+                        const dist = parseFloat(parts[2].trim());
+                        if (isNaN(dist)) continue;
+                        const date = new Date(dateStr);
+                        if (isNaN(date.getTime())) continue;
+                        const type = typeStr === 'Коррекция' ? 'correction' : 'trip';
+                        newTrips.push({ date: date.getTime(), distance: dist, type: type });
+                        if (type === 'trip') totalTrips += dist;
+                    }
+                    if (newTrips.length === 0) {
+                        showToast('Не удалось распарсить CSV');
+                        return;
+                    }
+                    data.trips = newTrips;
+                    data.totalTrips = totalTrips;
+                    saveData(data);
+                    renderAll();
+                    showToast(`📥 Импортировано ${newTrips.length} записей из CSV`);
+                } catch(err) {
+                    showToast('Ошибка при импорте CSV');
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function importJSON(file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    if (!json.trips || !Array.isArray(json.trips)) {
+                        showToast('Неверный формат JSON');
+                        return;
+                    }
+                    const data = loadData();
+                    data.trips = json.trips;
+                    data.totalTrips = data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
+                    if (json.chargeOdometer !== undefined) data.chargeOdometer = json.chargeOdometer;
+                    if (json.chargePercent !== undefined) data.chargePercent = json.chargePercent;
+                    if (json.fullRange !== undefined) data.fullRange = json.fullRange;
+                    if (json.chargeHoursFull !== undefined) data.chargeHoursFull = json.chargeHoursFull;
+                    if (json.toInterval !== undefined) data.toInterval = json.toInterval;
+                    if (json.notes !== undefined) data.notes = json.notes;
+                    saveData(data);
+                    renderAll();
+                    showToast(`📥 Импортировано ${data.trips.length} записей из JSON`);
+                } catch(err) {
+                    showToast('Ошибка при импорте JSON');
+                    console.error(err);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // ---- Переключение темы ----
+        function toggleTheme() {
+            const body = document.body;
+            const data = loadData();
+            const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+            body.classList.toggle('dark', newTheme === 'dark');
+            data.theme = newTheme;
+            saveData(data);
+            document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+        }
+
+        // ---- Инициализация ----
+        document.addEventListener('DOMContentLoaded', function() {
+            const data = loadData();
+            if (data.theme === 'dark') {
+                document.body.classList.add('dark');
+                document.getElementById('themeToggle').textContent = '☀️';
+            } else {
+                document.getElementById('themeToggle').textContent = '🌙';
+            }
+
+            renderAll();
+
+            // Вкладки
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    const tabId = this.dataset.tab;
+                    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+                    document.getElementById(tabId + '-tab').classList.add('active');
+                    if (tabId === 'stats') {
+                        const data = loadData();
+                        renderStats(data);
+                    }
+                });
+            });
+
+            // Основная
+            document.getElementById('addBtn').addEventListener('click', function() {
+                const val = parseFloat(document.getElementById('tripInput').value);
+                if (!isNaN(val)) addTrip(val);
+                else showToast('Введите число');
+            });
+            document.getElementById('tripInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('addBtn').click(); });
+            document.getElementById('undoBtn').addEventListener('click', undoLast);
+
+            const chargeSlider = document.getElementById('chargeAddSlider');
+            chargeSlider.addEventListener('input', function() {
+                const data = loadData();
+                updateChargeAddInfo(data);
+            });
+            document.getElementById('chargeBtn').addEventListener('click', chargeAdd);
+
+            // Модальное окно времени
+            document.getElementById('timeModalOpenBtn').addEventListener('click', openTimeModal);
+            document.getElementById('modalCancelBtn').addEventListener('click', closeTimeModal);
+            document.getElementById('modalApplyBtn').addEventListener('click', applyTimeToSlider);
+            document.getElementById('timeModal').addEventListener('click', function(e) {
+                if (e.target === this) closeTimeModal();
+            });
+
+            // Настройки
+            function setupSettingInput(id, field) {
+                const input = document.getElementById(id);
+                input.addEventListener('change', function() {
+                    let val = parseFloat(this.value);
+                    if (isNaN(val) || val <= 0) {
+                        showToast('Введите положительное число');
+                        const data = loadData();
+                        this.value = data[field];
+                        return;
+                    }
+                    saveSetting(field, val);
+                });
+            }
+            setupSettingInput('fullRangeSetting', 'fullRange');
+            setupSettingInput('chargeHoursSetting', 'chargeHoursFull');
+            setupSettingInput('toIntervalSetting', 'toInterval');
+
+            // Корректировка
+            document.getElementById('correctionBtn').addEventListener('click', function() {
+                const val = parseFloat(document.getElementById('correctionInput').value);
+                if (!isNaN(val)) applyCorrection(val);
+                else showToast('Введите число');
+            });
+            document.getElementById('correctionInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('correctionBtn').click(); });
+
+            // Заметки
+            const notesInput = document.getElementById('notesInput');
+            notesInput.addEventListener('change', saveNotes);
+            notesInput.addEventListener('input', function() {
+                clearTimeout(window._notesTimer);
+                window._notesTimer = setTimeout(saveNotes, 1000);
+            });
+
+            // Экспорт
+            document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
+            document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
+
+            // Импорт
+            document.getElementById('importCsvBtn').addEventListener('click', function() {
+                document.getElementById('csvFileInput').click();
+            });
+            document.getElementById('csvFileInput').addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    if (confirm('Импорт CSV заменит все текущие данные. Продолжить?')) {
+                        importCSV(this.files[0]);
+                    }
+                }
+                this.value = '';
+            });
+
+            document.getElementById('importJsonBtn').addEventListener('click', function() {
+                document.getElementById('jsonFileInput').click();
+            });
+            document.getElementById('jsonFileInput').addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    if (confirm('Импорт JSON заменит все текущие данные. Продолжить?')) {
+                        importJSON(this.files[0]);
+                    }
+                }
+                this.value = '';
+            });
+
+            document.getElementById('resetAllBtn').addEventListener('click', resetAllData);
+
+            document.getElementById('periodSelect').addEventListener('change', function() {
+                const data = loadData();
+                renderStats(data);
+            });
+
+            document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+        });
+    </script>
+</body>
+</html>
