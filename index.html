@@ -10,6 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Трекер электроскутера</title>
     <style>
+        /* ---------- Стили (без изменений, но добавлены стили для селектов) ---------- */
         :root {
             --bg: #f0f4f8;
             --card: #ffffff;
@@ -142,6 +143,7 @@
             color: var(--text-secondary);
             margin-top: 2px;
         }
+
         .battery-wrap { margin: 10px 0 6px; }
         .battery-bar {
             height: 10px;
@@ -164,6 +166,7 @@
             justify-content: space-between;
             font-size: 14px;
         }
+
         .input-group { margin: 10px 0; }
         .input-group label {
             display: block;
@@ -189,6 +192,7 @@
             min-width: 0;
         }
         .input-row input:focus { border-color: var(--btn-primary); }
+
         .btn {
             padding: 10px 16px;
             background: var(--btn-primary);
@@ -212,6 +216,7 @@
         .btn-sm { padding: 6px 12px; font-size: 13px; }
         .flex { display: flex; gap: 8px; flex-wrap: wrap; }
         .flex .btn { flex: 1; }
+
         .to-indicator {
             background: var(--input-bg);
             border-radius: 14px;
@@ -223,6 +228,7 @@
         }
         .to-indicator .to-label { color: var(--text-secondary); }
         .to-indicator .to-value { font-weight: 700; }
+
         .history {
             max-height: 150px;
             overflow-y: auto;
@@ -242,20 +248,30 @@
 
         .stats-controls {
             display: flex;
+            flex-wrap: wrap;
             gap: 8px;
             align-items: center;
             margin-bottom: 12px;
-            flex-wrap: wrap;
         }
-        .stats-controls select {
-            padding: 8px 12px;
+        .stats-controls select,
+        .stats-controls input[type="number"] {
+            padding: 6px 10px;
             border: 2px solid var(--border);
             border-radius: 14px;
             background: var(--input-bg);
             color: var(--text);
-            font-size: 15px;
-            flex: 1;
+            font-size: 14px;
+            outline: none;
+            flex: 1 0 auto;
         }
+        .stats-controls select:focus,
+        .stats-controls input:focus { border-color: var(--btn-primary); }
+        .stats-controls .btn {
+            flex: 0 1 auto;
+            padding: 6px 12px;
+            font-size: 13px;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -264,6 +280,7 @@
         }
         .stats-grid .stat-item { padding: 12px 4px; }
         .stats-grid .stat-value { font-size: 20px; }
+
         .stat-list .stat-item {
             display: flex;
             justify-content: space-between;
@@ -273,6 +290,22 @@
         }
         .stat-list .stat-item .date { color: var(--text-secondary); }
         .stat-list .stat-item .dist { font-weight: 600; }
+
+        .chart-container {
+            margin: 12px 0;
+            width: 100%;
+            background: var(--input-bg);
+            border-radius: 14px;
+            padding: 8px;
+            overflow-x: auto;
+        }
+        #statsChart, #chargeChart {
+            display: block;
+            width: 100%;
+            height: 160px;
+            background: var(--input-bg);
+            border-radius: 10px;
+        }
 
         .settings-group {
             margin: 12px 0;
@@ -330,7 +363,6 @@
             border-radius: 50%;
             cursor: pointer;
         }
-        /* ИСПРАВЛЕННЫЙ БЛОК — теперь текст помещается всегда */
         .charge-slider .charge-info {
             font-weight: 600;
             min-width: 70px;
@@ -449,6 +481,22 @@
             margin-top: 0;
         }
 
+        /* Стили для селектов дат */
+        .date-select-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            align-items: center;
+        }
+        .date-select-group select {
+            flex: 0 1 auto;
+            min-width: 60px;
+        }
+        .date-select-group label {
+            font-size: 13px;
+            margin-right: 2px;
+        }
+
         @media (max-width: 360px) {
             .stat-grid { grid-template-columns: 1fr 1fr; }
             .stat-grid .stat-item:last-child { grid-column: span 2; }
@@ -490,34 +538,18 @@
         <button class="tab-btn" data-tab="settings">⚙️ Настройки</button>
     </div>
 
-    <!-- ======== ОСНОВНАЯ ======== -->
+    <!-- ======== ОСНОВНАЯ (без изменений) ======== -->
     <div id="main-tab" class="tab-content active">
         <div class="card">
             <div class="stat-grid">
-                <div class="stat-item">
-                    <div class="stat-value" id="totalKm">0</div>
-                    <div class="stat-label">Общий пробег, км</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="lastTrip">0</div>
-                    <div class="stat-label">Последняя поездка, км</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value" id="sinceCharge">0</div>
-                    <div class="stat-label">С последней зарядки, км</div>
-                </div>
+                <div class="stat-item"><div class="stat-value" id="totalKm">0</div><div class="stat-label">Общий пробег, км</div></div>
+                <div class="stat-item"><div class="stat-value" id="lastTrip">0</div><div class="stat-label">Последняя поездка, км</div></div>
+                <div class="stat-item"><div class="stat-value" id="sinceCharge">0</div><div class="stat-label">С последней зарядки, км</div></div>
             </div>
-
             <div class="battery-wrap">
-                <div class="battery-info">
-                    <span>🔋 Остаток хода</span>
-                    <span><strong id="remainKm">0</strong> км · <strong id="batteryPercent">0</strong>%</span>
-                </div>
-                <div class="battery-bar">
-                    <div class="battery-fill" id="batteryFill" style="width:100%;"></div>
-                </div>
+                <div class="battery-info"><span>🔋 Остаток хода</span><span><strong id="remainKm">0</strong> км · <strong id="batteryPercent">0</strong>%</span></div>
+                <div class="battery-bar"><div class="battery-fill" id="batteryFill" style="width:100%;"></div></div>
             </div>
-
             <div class="input-group">
                 <label>📏 Пробег за поездку (км)</label>
                 <div class="input-row">
@@ -526,7 +558,6 @@
                     <button class="btn btn-outline btn-sm" id="undoBtn" title="Отменить последнюю">↩️</button>
                 </div>
             </div>
-
             <div class="input-group" style="margin-top:4px;">
                 <label>⚡ Добавить заряд</label>
                 <div class="charge-slider">
@@ -537,68 +568,94 @@
                 </div>
                 <button class="btn btn-success" id="chargeBtn" style="width:100%; margin-top:6px;">🔌 Зарядил (прибавить этот %)</button>
             </div>
-
             <div class="to-indicator">
                 <span class="to-label">🛠 До ТО (интервал <span id="toIntervalDisplay">500</span> км):</span>
                 <span class="to-value" id="toRemain">—</span>
             </div>
         </div>
-
         <div class="card">
             <h2 style="font-size:17px; margin:0 0 6px;">📋 История</h2>
-            <div id="historyList" class="history">
-                <div class="empty">Пока нет записей</div>
-            </div>
+            <div id="historyList" class="history"><div class="empty">Пока нет записей</div></div>
         </div>
     </div>
 
-    <!-- ======== СТАТИСТИКА ======== -->
+    <!-- ======== СТАТИСТИКА (обновлена) ======== -->
     <div id="stats-tab" class="tab-content">
         <div class="card">
+            <!-- Фильтры -->
             <div class="stats-controls">
                 <select id="periodSelect">
-                    <option value="day">День</option>
-                    <option value="week" selected>Неделя</option>
+                    <option value="all">Всё время</option>
+                    <option value="today" selected>Сегодня</option>
+                    <option value="week">Неделя</option>
                     <option value="month">Месяц</option>
+                    <option value="year">Год</option>
+                    <option value="custom_day">Произвольный день</option>
+                    <option value="custom_month">Произвольный месяц</option>
+                    <option value="custom_year">Произвольный год</option>
                 </select>
+                <span id="customDateContainer" style="display:none; flex-wrap:wrap; gap:4px; align-items:center;">
+                    <div class="date-select-group">
+                        <label>Год</label>
+                        <select id="customYear"></select>
+                    </div>
+                    <div class="date-select-group" id="monthGroup">
+                        <label>Месяц</label>
+                        <select id="customMonth"></select>
+                    </div>
+                    <div class="date-select-group" id="dayGroup">
+                        <label>День</label>
+                        <select id="customDay"></select>
+                    </div>
+                    <button class="btn btn-sm btn-outline" id="customApplyBtn">Показать</button>
+                </span>
             </div>
 
+            <!-- Пробег -->
+            <h3 style="font-size:16px; margin:8px 0 4px;">📊 Пробег</h3>
+            <div class="chart-container"><canvas id="statsChart" height="160"></canvas></div>
             <div class="stats-grid" id="statsSummary">
                 <div class="stat-item"><div class="stat-value" id="statTotal">0</div><div class="stat-label">Всего км</div></div>
                 <div class="stat-item"><div class="stat-value" id="statAvg">0</div><div class="stat-label">Средний за день</div></div>
                 <div class="stat-item"><div class="stat-value" id="statCount">0</div><div class="stat-label">Поездок</div></div>
                 <div class="stat-item"><div class="stat-value" id="statMax">0</div><div class="stat-label">Макс. за день</div></div>
             </div>
-
             <div id="statsDetail" class="stat-list"></div>
+
+            <!-- Зарядки -->
+            <hr style="border-color:var(--border); margin:20px 0 12px;">
+            <h3 style="font-size:16px; margin:8px 0 4px;">🔋 Зарядки</h3>
+            <div class="chart-container"><canvas id="chargeChart" height="160"></canvas></div>
+            <div class="stats-grid" id="chargeSummary">
+                <div class="stat-item"><div class="stat-value" id="chargeCount">0</div><div class="stat-label">Количество зарядок</div></div>
+                <div class="stat-item"><div class="stat-value" id="chargeTotalPercent">0</div><div class="stat-label">Всего добавлено %</div></div>
+                <div class="stat-item"><div class="stat-value" id="chargeAvgPercent">0</div><div class="stat-label">Средний % за зарядку</div></div>
+                <div class="stat-item"><div class="stat-value" id="chargeMaxPercent">0</div><div class="stat-label">Макс. за зарядку</div></div>
+            </div>
+            <div id="chargeDetail" class="stat-list"></div>
         </div>
     </div>
 
-    <!-- ======== НАСТРОЙКИ ======== -->
+    <!-- ======== НАСТРОЙКИ (без изменений) ======== -->
     <div id="settings-tab" class="tab-content">
         <div class="card">
             <h2 style="font-size:18px; margin:0 0 12px;">⚙️ Основные настройки</h2>
-
             <div class="settings-group">
                 <label for="fullRangeSetting">Полный запас хода (км)</label>
                 <input type="number" id="fullRangeSetting" step="0.5" min="1" placeholder="Напр. 60">
                 <div class="hint">Расчётный пробег при 100% заряде</div>
             </div>
-
             <div class="settings-group">
                 <label for="chargeHoursSetting">Время полной зарядки (часы)</label>
                 <input type="number" id="chargeHoursSetting" step="0.1" min="0.1" placeholder="Напр. 4.0">
                 <div class="hint">Сколько часов требуется для зарядки с 0 до 100%</div>
             </div>
-
             <div class="settings-group">
                 <label for="toIntervalSetting">Интервал ТО (км)</label>
                 <input type="number" id="toIntervalSetting" step="10" min="10" placeholder="Напр. 500">
                 <div class="hint">Напоминание о техобслуживании через каждые N км</div>
             </div>
-
             <hr style="border-color:var(--border); margin:16px 0;">
-
             <div class="settings-group">
                 <label>🔧 Корректировка одометра (км, +/-)</label>
                 <div class="input-row">
@@ -607,24 +664,19 @@
                 </div>
                 <div class="hint">Влияет только на общий пробег, не меняет пробег с зарядки и остаток хода</div>
             </div>
-
             <hr style="border-color:var(--border); margin:16px 0;">
-
             <div class="settings-group">
                 <label for="notesInput">📝 Заметки (на память)</label>
                 <textarea id="notesInput" placeholder="Напишите что угодно: дата замены колодок, номер телефона мастера, примечания..."></textarea>
                 <div class="hint">Сохраняются автоматически при вводе</div>
             </div>
-
             <hr style="border-color:var(--border); margin:16px 0;">
-
             <div class="settings-section-title">📤 Экспорт данных</div>
             <div style="display: flex; gap: 10px; margin-top: 8px;">
                 <button class="btn btn-outline btn-sm" id="exportCsvBtn" style="flex:1;">CSV</button>
                 <button class="btn btn-outline btn-sm" id="exportJsonBtn" style="flex:1;">JSON</button>
             </div>
             <div class="hint" style="margin-top: 4px;">Выгрузить все записи в файл</div>
-
             <div class="settings-section-title" style="margin-top:20px;">📥 Импорт данных</div>
             <div style="display: flex; gap: 10px; margin-top: 8px;">
                 <button class="btn btn-outline btn-sm" id="importCsvBtn" style="flex:1;">CSV</button>
@@ -633,12 +685,12 @@
             <div class="hint" style="margin-top: 4px;">Восстановить данные из файла (заменит текущие)</div>
             <input type="file" id="csvFileInput" class="hidden-input" accept=".csv">
             <input type="file" id="jsonFileInput" class="hidden-input" accept=".json">
-
             <button class="btn btn-danger" id="resetAllBtn" style="width:100%; margin-top:20px;">🗑 Сбросить все данные</button>
         </div>
     </div>
 
     <script>
+        // ======================== ОСНОВНОЙ СКРИПТ ========================
         const STORAGE_KEY = 'scooter_tracker_data_v2';
 
         function defaultData() {
@@ -652,7 +704,8 @@
                 toInterval: 500,
                 lastToNotified: 0,
                 theme: 'light',
-                notes: ''
+                notes: '',
+                chargeLog: []
             };
         }
 
@@ -674,9 +727,12 @@
                         data.trips = data.trips.map(t => ({ ...t, type: 'trip' }));
                         data.totalTrips = data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
                     }
+                    if (data.chargeLog === undefined) data.chargeLog = [];
                     return data;
                 }
-            } catch(e) {}
+            } catch(e) {
+                console.warn('Ошибка загрузки данных:', e);
+            }
             return defaultData();
         }
 
@@ -708,65 +764,73 @@
         let toastTimer = null;
         function showToast(text) {
             const el = document.getElementById('toast');
+            if (!el) return;
             el.textContent = text;
             el.classList.add('show');
             clearTimeout(toastTimer);
             toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
         }
 
+        // ---------- Отрисовка основной вкладки ----------
         function renderMain(data) {
             const total = calcTotal(data.trips);
             const battery = calcBattery(data);
             const last = data.trips.length > 0 ? data.trips[data.trips.length-1] : null;
 
-            document.getElementById('totalKm').textContent = total.toFixed(1);
-            document.getElementById('lastTrip').textContent = last ? last.distance.toFixed(1) : '0';
-            document.getElementById('sinceCharge').textContent = battery.drivenSinceCharge.toFixed(1);
-
-            document.getElementById('remainKm').textContent = battery.remain.toFixed(1);
-            document.getElementById('batteryPercent').textContent = Math.round(battery.percent);
-            const fill = document.getElementById('batteryFill');
-            fill.style.width = battery.percent + '%';
-            fill.className = 'battery-fill' + (battery.percent < 20 ? ' low' : battery.percent < 50 ? ' medium' : '');
-
-            const toInfo = checkTO(data, total);
-            const toRemainEl = document.getElementById('toRemain');
-            const toIntervalDisplay = document.getElementById('toIntervalDisplay');
-            toIntervalDisplay.textContent = data.toInterval;
-            if (toInfo) {
-                toRemainEl.textContent = toInfo.remain.toFixed(1) + ' км';
-                if (toInfo.remain <= 0) {
-                    toRemainEl.style.color = 'var(--btn-danger)';
-                    if (data.lastToNotified < total) {
-                        showToast('🛠 Пора проверить тормоза и смазать подшипники!');
-                        data.lastToNotified = total;
-                        saveData(data);
-                    }
-                } else {
-                    toRemainEl.style.color = 'var(--text)';
-                }
-            } else {
-                toRemainEl.textContent = '—';
+            const el = (id) => document.getElementById(id);
+            if (el('totalKm')) el('totalKm').textContent = total.toFixed(1);
+            if (el('lastTrip')) el('lastTrip').textContent = last ? last.distance.toFixed(1) : '0';
+            if (el('sinceCharge')) el('sinceCharge').textContent = battery.drivenSinceCharge.toFixed(1);
+            if (el('remainKm')) el('remainKm').textContent = battery.remain.toFixed(1);
+            if (el('batteryPercent')) el('batteryPercent').textContent = Math.round(battery.percent);
+            const fill = el('batteryFill');
+            if (fill) {
+                fill.style.width = battery.percent + '%';
+                fill.className = 'battery-fill' + (battery.percent < 20 ? ' low' : battery.percent < 50 ? ' medium' : '');
             }
 
-            const historyDiv = document.getElementById('historyList');
-            if (data.trips.length === 0) {
-                historyDiv.innerHTML = '<div class="empty">Пока нет записей</div>';
-            } else {
-                const reversed = [...data.trips].reverse();
-                let html = '';
-                reversed.slice(0, 30).forEach(trip => {
-                    const d = new Date(trip.date);
-                    const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
-                    const isCorrection = trip.type === 'correction';
-                    const sign = isCorrection ? (trip.distance >= 0 ? '+' : '') : '+';
-                    const cls = isCorrection ? 'correction' : '';
-                    html += `<div class="history-item">
-                        <span class="date">${dateStr}${isCorrection ? ' 🔧' : ''}</span>
-                        <span class="km ${cls}">${sign}${trip.distance.toFixed(1)} км</span>
-                    </div>`;
-                });
-                historyDiv.innerHTML = html;
+            const toInfo = checkTO(data, total);
+            const toRemainEl = el('toRemain');
+            const toIntervalDisplay = el('toIntervalDisplay');
+            if (toIntervalDisplay) toIntervalDisplay.textContent = data.toInterval;
+            if (toRemainEl) {
+                if (toInfo) {
+                    toRemainEl.textContent = toInfo.remain.toFixed(1) + ' км';
+                    if (toInfo.remain <= 0) {
+                        toRemainEl.style.color = 'var(--btn-danger)';
+                        if (data.lastToNotified < total) {
+                            showToast('🛠 Пора проверить тормоза и смазать подшипники!');
+                            data.lastToNotified = total;
+                            saveData(data);
+                        }
+                    } else {
+                        toRemainEl.style.color = 'var(--text)';
+                    }
+                } else {
+                    toRemainEl.textContent = '—';
+                }
+            }
+
+            const historyDiv = el('historyList');
+            if (historyDiv) {
+                if (data.trips.length === 0) {
+                    historyDiv.innerHTML = '<div class="empty">Пока нет записей</div>';
+                } else {
+                    const reversed = [...data.trips].reverse();
+                    let html = '';
+                    reversed.slice(0, 30).forEach(trip => {
+                        const d = new Date(trip.date);
+                        const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                        const isCorrection = trip.type === 'correction';
+                        const sign = isCorrection ? (trip.distance >= 0 ? '+' : '') : '+';
+                        const cls = isCorrection ? 'correction' : '';
+                        html += `<div class="history-item">
+                            <span class="date">${dateStr}${isCorrection ? ' 🔧' : ''}</span>
+                            <span class="km ${cls}">${sign}${trip.distance.toFixed(1)} км</span>
+                        </div>`;
+                    });
+                    historyDiv.innerHTML = html;
+                }
             }
 
             updateChargeAddInfo(data);
@@ -774,62 +838,286 @@
 
         function updateChargeAddInfo(data) {
             const slider = document.getElementById('chargeAddSlider');
+            if (!slider) return;
             const addPercent = parseInt(slider.value);
             const hours = (addPercent / 100) * data.chargeHoursFull;
-            document.getElementById('chargeAddInfo').textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
+            const info = document.getElementById('chargeAddInfo');
+            if (info) info.textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
         }
 
+        // ---------- СТАТИСТИКА (переработана) ----------
         function renderStats(data) {
-            const period = document.getElementById('periodSelect').value;
-            const tripEntries = data.trips.filter(t => t.type === 'trip');
-            const dayMap = new Map();
-            tripEntries.forEach(t => {
-                const d = new Date(t.date);
-                const key = d.toISOString().slice(0,10);
-                if (!dayMap.has(key)) dayMap.set(key, 0);
-                dayMap.set(key, dayMap.get(key) + t.distance);
-            });
-            const sortedDays = Array.from(dayMap.entries()).sort((a,b) => a[0].localeCompare(b[0]));
-            const now = new Date();
-            const cutoff = new Date(now);
-            if (period === 'day') cutoff.setDate(now.getDate() - 1);
-            else if (period === 'week') cutoff.setDate(now.getDate() - 7);
-            else if (period === 'month') cutoff.setMonth(now.getMonth() - 1);
+            try {
+                const period = document.getElementById('periodSelect')?.value || 'today';
+                let cutoff = new Date();
+                let customType = null; // 'day', 'month', 'year'
+                let customYear = null, customMonth = null, customDay = null;
 
-            const filtered = sortedDays.filter(([dateStr]) => dateStr >= cutoff.toISOString().slice(0,10));
-            let sum = 0, count = 0, max = 0;
-            filtered.forEach(([_, dist]) => {
-                sum += dist;
-                count++;
-                if (dist > max) max = dist;
-            });
-            const avg = count > 0 ? sum / count : 0;
+                // Определяем параметры пользовательского периода
+                if (period.startsWith('custom_')) {
+                    customType = period.replace('custom_', '');
+                    const yearSelect = document.getElementById('customYear');
+                    const monthSelect = document.getElementById('customMonth');
+                    const daySelect = document.getElementById('customDay');
+                    if (yearSelect) customYear = parseInt(yearSelect.value);
+                    if (monthSelect) customMonth = parseInt(monthSelect.value) - 1; // 0-11
+                    if (daySelect) customDay = parseInt(daySelect.value);
+                    if (!customYear || isNaN(customYear)) {
+                        showToast('Выберите год');
+                        return;
+                    }
+                }
 
-            document.getElementById('statTotal').textContent = sum.toFixed(1);
-            document.getElementById('statAvg').textContent = avg.toFixed(1);
-            document.getElementById('statCount').textContent = count;
-            document.getElementById('statMax').textContent = max.toFixed(1);
+                // Функция фильтрации поездок
+                function filterTrips(trips) {
+                    return trips.filter(t => {
+                        const d = new Date(t.date);
+                        if (period === 'today') {
+                            return d.toDateString() === new Date().toDateString();
+                        } else if (period === 'custom_day') {
+                            return d.getFullYear() === customYear && d.getMonth() === customMonth && d.getDate() === customDay;
+                        } else if (period === 'custom_month') {
+                            return d.getFullYear() === customYear && d.getMonth() === customMonth;
+                        } else if (period === 'custom_year') {
+                            return d.getFullYear() === customYear;
+                        }
+                        return true; // остальные фильтруются позже по cutoff
+                    });
+                }
 
-            const detailDiv = document.getElementById('statsDetail');
-            if (filtered.length === 0) {
-                detailDiv.innerHTML = '<div class="empty">Нет данных за выбранный период</div>';
-            } else {
-                let html = '';
-                filtered.forEach(([dateStr, dist]) => {
-                    html += `<div class="stat-item">
-                        <span class="date">${dateStr}</span>
-                        <span class="dist">${dist.toFixed(1)} км</span>
-                    </div>`;
+                // Определяем cutoff для не-кастомных периодов
+                if (!period.startsWith('custom_')) {
+                    const now = new Date();
+                    if (period === 'today') {
+                        cutoff = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    } else if (period === 'week') {
+                        cutoff.setDate(now.getDate() - 7);
+                    } else if (period === 'month') {
+                        cutoff.setMonth(now.getMonth() - 1);
+                    } else if (period === 'year') {
+                        cutoff.setFullYear(now.getFullYear() - 1);
+                    } else { // 'all'
+                        cutoff = new Date(0);
+                    }
+                }
+
+                // ----- Пробег -----
+                let tripEntries = data.trips.filter(t => t.type === 'trip');
+                // Применяем кастомную фильтрацию
+                if (period.startsWith('custom_')) {
+                    tripEntries = filterTrips(tripEntries);
+                } else {
+                    // Для стандартных периодов фильтруем по cutoff
+                    const cutoffStr = cutoff.toISOString().slice(0,10);
+                    tripEntries = tripEntries.filter(t => new Date(t.date).toISOString().slice(0,10) >= cutoffStr);
+                }
+
+                // Группировка
+                const dayMap = new Map();
+                tripEntries.forEach(t => {
+                    const d = new Date(t.date);
+                    let key;
+                    if (period === 'custom_year') {
+                        // для года группируем по месяцам
+                        key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                    } else {
+                        // иначе по дням
+                        key = d.toISOString().slice(0,10);
+                    }
+                    if (!dayMap.has(key)) dayMap.set(key, 0);
+                    dayMap.set(key, dayMap.get(key) + t.distance);
                 });
-                detailDiv.innerHTML = html;
+
+                let sortedDays = Array.from(dayMap.entries()).sort((a,b) => a[0].localeCompare(b[0]));
+                // Для стандартных периодов дополнительная фильтрация по cutoff (уже сделана)
+                let filtered = sortedDays;
+
+                let sum = 0, count = 0, max = 0;
+                filtered.forEach(([_, dist]) => {
+                    sum += dist;
+                    count++;
+                    if (dist > max) max = dist;
+                });
+                const avg = count > 0 ? sum / count : 0;
+
+                document.getElementById('statTotal').textContent = sum.toFixed(1);
+                document.getElementById('statAvg').textContent = avg.toFixed(1);
+                document.getElementById('statCount').textContent = count;
+                document.getElementById('statMax').textContent = max.toFixed(1);
+
+                const detailDiv = document.getElementById('statsDetail');
+                if (detailDiv) {
+                    if (filtered.length === 0) {
+                        detailDiv.innerHTML = '<div class="empty">Нет данных за выбранный период</div>';
+                    } else {
+                        let html = '';
+                        filtered.forEach(([key, dist]) => {
+                            html += `<div class="stat-item">
+                                <span class="date">${key}</span>
+                                <span class="dist">${dist.toFixed(1)} км</span>
+                            </div>`;
+                        });
+                        detailDiv.innerHTML = html;
+                    }
+                }
+
+                // График
+                const unit = period === 'custom_year' ? 'км/мес' : 'км';
+                drawChart('statsChart', filtered, unit, '#3b82f6');
+
+                // ----- Зарядки -----
+                let chargeLog = data.chargeLog || [];
+                if (period.startsWith('custom_')) {
+                    chargeLog = chargeLog.filter(c => {
+                        const d = new Date(c.date);
+                        if (period === 'custom_day') {
+                            return d.getFullYear() === customYear && d.getMonth() === customMonth && d.getDate() === customDay;
+                        } else if (period === 'custom_month') {
+                            return d.getFullYear() === customYear && d.getMonth() === customMonth;
+                        } else if (period === 'custom_year') {
+                            return d.getFullYear() === customYear;
+                        }
+                        return true;
+                    });
+                } else {
+                    const cutoffStr = cutoff.toISOString().slice(0,10);
+                    chargeLog = chargeLog.filter(c => new Date(c.date).toISOString().slice(0,10) >= cutoffStr);
+                }
+
+                const chargeCount = chargeLog.length;
+                let totalAdded = 0, maxAdded = 0;
+                chargeLog.forEach(c => { totalAdded += c.addedPercent; if (c.addedPercent > maxAdded) maxAdded = c.addedPercent; });
+                const avgAdded = chargeCount > 0 ? totalAdded / chargeCount : 0;
+
+                document.getElementById('chargeCount').textContent = chargeCount;
+                document.getElementById('chargeTotalPercent').textContent = totalAdded.toFixed(1);
+                document.getElementById('chargeAvgPercent').textContent = avgAdded.toFixed(1);
+                document.getElementById('chargeMaxPercent').textContent = maxAdded.toFixed(1);
+
+                const chargeDetailDiv = document.getElementById('chargeDetail');
+                if (chargeDetailDiv) {
+                    if (chargeLog.length === 0) {
+                        chargeDetailDiv.innerHTML = '<div class="empty">Нет зарядок за выбранный период</div>';
+                    } else {
+                        let html = '';
+                        chargeLog.slice().reverse().forEach(c => {
+                            const d = new Date(c.date);
+                            const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+                            html += `<div class="stat-item">
+                                <span class="date">${dateStr}</span>
+                                <span class="dist">+${c.addedPercent}% → ${c.newPercent}%</span>
+                            </div>`;
+                        });
+                        chargeDetailDiv.innerHTML = html;
+                    }
+                }
+
+                // График зарядок (группировка по дням или месяцам)
+                const chargeDayMap = new Map();
+                chargeLog.forEach(c => {
+                    const d = new Date(c.date);
+                    let key;
+                    if (period === 'custom_year') {
+                        key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                    } else {
+                        key = d.toISOString().slice(0,10);
+                    }
+                    if (!chargeDayMap.has(key)) chargeDayMap.set(key, 0);
+                    chargeDayMap.set(key, chargeDayMap.get(key) + c.addedPercent);
+                });
+                const chargeDays = Array.from(chargeDayMap.entries()).sort((a,b) => a[0].localeCompare(b[0]));
+                const chargeUnit = period === 'custom_year' ? '%/мес' : '%';
+                drawChart('chargeChart', chargeDays, chargeUnit, '#22c55e');
+
+            } catch (e) {
+                console.error('Ошибка в renderStats:', e);
+                showToast('Ошибка при отображении статистики');
             }
         }
 
+        // ---------- ОТРИСОВКА ГРАФИКА ----------
+        function drawChart(canvasId, data, unit, color) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            const container = canvas.parentElement;
+            const containerWidth = container ? container.clientWidth : 300;
+            const width = Math.max(containerWidth, 100);
+            const height = 160;
+
+            const dpr = 1;
+            canvas.width = width * dpr;
+            canvas.height = height * dpr;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.scale(dpr, dpr);
+
+            ctx.clearRect(0, 0, width, height);
+
+            if (!data || data.length === 0) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Нет данных', width/2, height/2);
+                return;
+            }
+
+            const values = data.map(item => item[1]);
+            const maxVal = Math.max(...values, 1);
+            const padding = { top: 20, bottom: 20, left: 30, right: 15 };
+            const chartW = width - padding.left - padding.right;
+            const chartH = height - padding.top - padding.bottom;
+            const barWidth = Math.min(20, chartW / data.length * 0.7);
+            const gap = chartW / data.length;
+
+            const isDark = document.body.classList.contains('dark');
+            const barColor = isDark ? '#60a5fa' : color || '#3b82f6';
+            const textColor = isDark ? '#e2e8f0' : '#0b1a33';
+
+            ctx.strokeStyle = isDark ? '#334155' : '#dce2ec';
+            ctx.lineWidth = 0.5;
+            ctx.fillStyle = textColor;
+            ctx.font = '10px sans-serif';
+            for (let y = 0; y < 4; y++) {
+                const yPos = padding.top + chartH - (y / 3) * chartH;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, yPos);
+                ctx.lineTo(width - padding.right, yPos);
+                ctx.stroke();
+                const val = (y / 3) * maxVal;
+                ctx.textAlign = 'right';
+                ctx.fillText(val.toFixed(1) + (unit ? ' ' + unit : ''), padding.left - 4, yPos + 4);
+            }
+
+            data.forEach(([label, value], i) => {
+                const x = padding.left + i * gap + (gap - barWidth) / 2;
+                const barHeight = (value / maxVal) * chartH;
+                const y = padding.top + chartH - barHeight;
+
+                ctx.fillStyle = barColor;
+                ctx.fillRect(x, y, barWidth, barHeight);
+
+                ctx.fillStyle = textColor;
+                ctx.font = '8px sans-serif';
+                ctx.textAlign = 'center';
+                let shortLabel = label;
+                if (label.length > 10) shortLabel = label.slice(5);
+                ctx.fillText(shortLabel, x + barWidth/2, padding.top + chartH + 14);
+            });
+        }
+
+        // ---------- Настройки ----------
         function renderSettings(data) {
-            document.getElementById('fullRangeSetting').value = data.fullRange;
-            document.getElementById('chargeHoursSetting').value = data.chargeHoursFull;
-            document.getElementById('toIntervalSetting').value = data.toInterval;
-            document.getElementById('notesInput').value = data.notes || '';
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val;
+            };
+            setVal('fullRangeSetting', data.fullRange);
+            setVal('chargeHoursSetting', data.chargeHoursFull);
+            setVal('toIntervalSetting', data.toInterval);
+            setVal('notesInput', data.notes || '');
         }
 
         function renderAll() {
@@ -837,12 +1125,12 @@
             renderMain(data);
             renderSettings(data);
             const statsTab = document.getElementById('stats-tab');
-            if (statsTab.classList.contains('active')) {
+            if (statsTab && statsTab.classList.contains('active')) {
                 renderStats(data);
             }
         }
 
-        // ---- Действия ----
+        // ---------- Действия ----------
         function addTrip(distance) {
             if (distance <= 0) {
                 showToast('Введите положительное число');
@@ -879,7 +1167,6 @@
             }
             const data = loadData();
             data.trips.push({ date: Date.now(), distance: value, type: 'correction' });
-            // totalTrips не меняем
             saveData(data);
             renderAll();
             document.getElementById('correctionInput').value = '';
@@ -899,6 +1186,11 @@
                 showToast('Уже 100% заряда');
                 return;
             }
+            data.chargeLog.push({
+                date: Date.now(),
+                addedPercent: addPercent,
+                newPercent: newPercent
+            });
             data.chargePercent = newPercent;
             data.chargeOdometer = data.totalTrips;
             saveData(data);
@@ -974,16 +1266,24 @@
             }
         }
 
-        // ---- Экспорт ----
+        // ---- Экспорт/Импорт (с учётом chargeLog) ----
         function exportCSV() {
             const data = loadData();
-            if (data.trips.length === 0) { showToast('Нет данных для экспорта'); return; }
-            let csv = 'Дата,Тип,Расстояние(км)\n';
+            if (data.trips.length === 0 && data.chargeLog.length === 0) {
+                showToast('Нет данных для экспорта');
+                return;
+            }
+            let csv = 'Дата,Тип,Расстояние(км),Добавлено%,Новый%\n';
             data.trips.forEach(t => {
                 const d = new Date(t.date);
                 const dateStr = d.toISOString().slice(0,10) + ' ' + d.toTimeString().slice(0,8);
                 const type = t.type === 'correction' ? 'Коррекция' : 'Поездка';
-                csv += `${dateStr},${type},${t.distance.toFixed(1)}\n`;
+                csv += `${dateStr},${type},${t.distance.toFixed(1)},,\n`;
+            });
+            data.chargeLog.forEach(c => {
+                const d = new Date(c.date);
+                const dateStr = d.toISOString().slice(0,10) + ' ' + d.toTimeString().slice(0,8);
+                csv += `${dateStr},Зарядка,,${c.addedPercent},${c.newPercent}\n`;
             });
             downloadFile(csv, 'scooter_data.csv', 'text/csv');
             showToast('📤 CSV экспортирован');
@@ -991,7 +1291,10 @@
 
         function exportJSON() {
             const data = loadData();
-            if (data.trips.length === 0) { showToast('Нет данных для экспорта'); return; }
+            if (data.trips.length === 0 && data.chargeLog.length === 0) {
+                showToast('Нет данных для экспорта');
+                return;
+            }
             const json = JSON.stringify(data, null, 2);
             downloadFile(json, 'scooter_data.json', 'application/json');
             showToast('📄 JSON экспортирован');
@@ -1008,43 +1311,48 @@
             URL.revokeObjectURL(link.href);
         }
 
-        // ---- Импорт ----
         function importCSV(file) {
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const text = e.target.result;
                     const lines = text.split('\n').filter(line => line.trim() !== '');
-                    const header = lines[0];
                     const data = loadData();
                     const newTrips = [];
+                    const newChargeLog = [];
                     let totalTrips = 0;
                     let startIndex = 0;
-                    if (header.includes('Дата') || header.includes('Date')) {
-                        startIndex = 1;
-                    }
+                    const header = lines[0];
+                    if (header.includes('Дата') || header.includes('Date')) startIndex = 1;
                     for (let i = startIndex; i < lines.length; i++) {
                         const parts = lines[i].split(',');
                         if (parts.length < 3) continue;
                         const dateStr = parts[0].trim();
-                        const typeStr = parts[1].trim();
+                        const type = parts[1].trim();
                         const dist = parseFloat(parts[2].trim());
-                        if (isNaN(dist)) continue;
+                        const added = parseFloat(parts[3]?.trim());
+                        const newP = parseFloat(parts[4]?.trim());
                         const date = new Date(dateStr);
                         if (isNaN(date.getTime())) continue;
-                        const type = typeStr === 'Коррекция' ? 'correction' : 'trip';
-                        newTrips.push({ date: date.getTime(), distance: dist, type: type });
-                        if (type === 'trip') totalTrips += dist;
+                        if (type === 'Зарядка' && !isNaN(added) && !isNaN(newP)) {
+                            newChargeLog.push({ date: date.getTime(), addedPercent: added, newPercent: newP });
+                        } else if (type === 'Поездка' || type === 'Коррекция') {
+                            if (isNaN(dist)) continue;
+                            const ttype = type === 'Коррекция' ? 'correction' : 'trip';
+                            newTrips.push({ date: date.getTime(), distance: dist, type: ttype });
+                            if (ttype === 'trip') totalTrips += dist;
+                        }
                     }
-                    if (newTrips.length === 0) {
+                    if (newTrips.length === 0 && newChargeLog.length === 0) {
                         showToast('Не удалось распарсить CSV');
                         return;
                     }
                     data.trips = newTrips;
                     data.totalTrips = totalTrips;
+                    data.chargeLog = newChargeLog;
                     saveData(data);
                     renderAll();
-                    showToast(`📥 Импортировано ${newTrips.length} записей из CSV`);
+                    showToast(`📥 Импортировано: ${newTrips.length} поездок, ${newChargeLog.length} зарядок из CSV`);
                 } catch(err) {
                     showToast('Ошибка при импорте CSV');
                     console.error(err);
@@ -1065,6 +1373,8 @@
                     const data = loadData();
                     data.trips = json.trips;
                     data.totalTrips = data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
+                    if (json.chargeLog) data.chargeLog = json.chargeLog;
+                    else data.chargeLog = [];
                     if (json.chargeOdometer !== undefined) data.chargeOdometer = json.chargeOdometer;
                     if (json.chargePercent !== undefined) data.chargePercent = json.chargePercent;
                     if (json.fullRange !== undefined) data.fullRange = json.fullRange;
@@ -1073,7 +1383,7 @@
                     if (json.notes !== undefined) data.notes = json.notes;
                     saveData(data);
                     renderAll();
-                    showToast(`📥 Импортировано ${data.trips.length} записей из JSON`);
+                    showToast(`📥 Импортировано ${data.trips.length} поездок, ${data.chargeLog.length} зарядок из JSON`);
                 } catch(err) {
                     showToast('Ошибка при импорте JSON');
                     console.error(err);
@@ -1091,10 +1401,75 @@
             data.theme = newTheme;
             saveData(data);
             document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
+            const statsTab = document.getElementById('stats-tab');
+            if (statsTab && statsTab.classList.contains('active')) {
+                renderStats(loadData());
+            }
         }
 
-        // ---- Инициализация ----
+        // ---- Заполнение селектов дат ----
+        function populateCustomDateSelects() {
+            const yearSelect = document.getElementById('customYear');
+            const monthSelect = document.getElementById('customMonth');
+            const daySelect = document.getElementById('customDay');
+            if (!yearSelect || !monthSelect || !daySelect) return;
+
+            const currentYear = new Date().getFullYear();
+            for (let y = currentYear; y >= currentYear - 10; y--) {
+                const opt = document.createElement('option');
+                opt.value = y;
+                opt.textContent = y;
+                yearSelect.appendChild(opt);
+            }
+            for (let m = 1; m <= 12; m++) {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                monthSelect.appendChild(opt);
+            }
+            for (let d = 1; d <= 31; d++) {
+                const opt = document.createElement('option');
+                opt.value = d;
+                opt.textContent = d;
+                daySelect.appendChild(opt);
+            }
+            // Установить сегодня
+            const now = new Date();
+            yearSelect.value = now.getFullYear();
+            monthSelect.value = now.getMonth() + 1;
+            daySelect.value = now.getDate();
+        }
+
+        // ---- Управление видимостью селектов дат ----
+        function updateDateSelectsVisibility() {
+            const period = document.getElementById('periodSelect')?.value || 'today';
+            const container = document.getElementById('customDateContainer');
+            const monthGroup = document.getElementById('monthGroup');
+            const dayGroup = document.getElementById('dayGroup');
+            if (!container || !monthGroup || !dayGroup) return;
+
+            if (period === 'custom_day' || period === 'custom_month' || period === 'custom_year') {
+                container.style.display = 'flex';
+                if (period === 'custom_day') {
+                    monthGroup.style.display = 'flex';
+                    dayGroup.style.display = 'flex';
+                } else if (period === 'custom_month') {
+                    monthGroup.style.display = 'flex';
+                    dayGroup.style.display = 'none';
+                } else if (period === 'custom_year') {
+                    monthGroup.style.display = 'none';
+                    dayGroup.style.display = 'none';
+                }
+            } else {
+                container.style.display = 'none';
+            }
+        }
+
+        // ---- ИНИЦИАЛИЗАЦИЯ ----
         document.addEventListener('DOMContentLoaded', function() {
+            populateCustomDateSelects();
+            updateDateSelectsVisibility();
+
             const data = loadData();
             if (data.theme === 'dark') {
                 document.body.classList.add('dark');
@@ -1209,7 +1584,15 @@
 
             document.getElementById('resetAllBtn').addEventListener('click', resetAllData);
 
+            // Статистика: переключение периода
             document.getElementById('periodSelect').addEventListener('change', function() {
+                updateDateSelectsVisibility();
+                const data = loadData();
+                renderStats(data);
+            });
+
+            // Кнопка "Показать" для произвольной даты
+            document.getElementById('customApplyBtn').addEventListener('click', function() {
                 const data = loadData();
                 renderStats(data);
             });
