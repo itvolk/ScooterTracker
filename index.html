@@ -217,6 +217,33 @@
         .flex { display: flex; gap: 8px; flex-wrap: wrap; }
         .flex .btn { flex: 1; }
 
+        .charge-mode-toggle {
+            display: flex;
+            gap: 6px;
+            margin: 6px 0;
+            background: var(--input-bg);
+            border-radius: 14px;
+            padding: 4px;
+            border: 2px solid var(--border);
+        }
+        .charge-mode-toggle button {
+            flex: 1;
+            padding: 6px 0;
+            border: none;
+            border-radius: 12px;
+            background: transparent;
+            font-weight: 600;
+            font-size: 13px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .charge-mode-toggle button.active {
+            background: var(--btn-primary);
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
         .to-indicator {
             background: var(--input-bg);
             border-radius: 14px;
@@ -537,7 +564,7 @@
         <button class="tab-btn" data-tab="settings">⚙️ Настройки</button>
     </div>
 
-    <!-- ======== ОСНОВНАЯ (без изменений) ======== -->
+    <!-- ======== ОСНОВНАЯ ======== -->
     <div id="main-tab" class="tab-content active">
         <div class="card">
             <div class="stat-grid">
@@ -565,6 +592,10 @@
                     <span class="charge-info" id="chargeAddInfo">0% (0 ч)</span>
                     <button class="time-btn" id="timeModalOpenBtn" title="Ввести время зарядки">🕒</button>
                 </div>
+                <div class="charge-mode-toggle" id="chargeModeToggle" style="display:none;">
+                    <button data-mode="normal">🔋 Обычная</button>
+                    <button data-mode="fast">⚡ Быстрая</button>
+                </div>
                 <button class="btn btn-success" id="chargeBtn" style="width:100%; margin-top:6px;">🔌 Зарядил (прибавить этот %)</button>
             </div>
             <div class="to-indicator">
@@ -581,7 +612,6 @@
     <!-- ======== СТАТИСТИКА ======== -->
     <div id="stats-tab" class="tab-content">
         <div class="card">
-            <!-- Фильтры -->
             <div class="stats-controls">
                 <select id="periodSelect">
                     <option value="all">Всё время</option>
@@ -610,7 +640,6 @@
                 </span>
             </div>
 
-            <!-- Пробег -->
             <h3 style="font-size:16px; margin:8px 0 4px;">📊 Пробег</h3>
             <div class="chart-container"><canvas id="statsChart" height="160"></canvas></div>
             <div class="stats-grid" id="statsSummary">
@@ -621,7 +650,6 @@
             </div>
             <div id="statsDetail" class="stat-list"></div>
 
-            <!-- Зарядки -->
             <hr style="border-color:var(--border); margin:20px 0 12px;">
             <h3 style="font-size:16px; margin:8px 0 4px;">🔋 Зарядки</h3>
             <div class="chart-container"><canvas id="chargeChart" height="160"></canvas></div>
@@ -635,26 +663,37 @@
         </div>
     </div>
 
-    <!-- ======== НАСТРОЙКИ (без изменений) ======== -->
+    <!-- ======== НАСТРОЙКИ ======== -->
     <div id="settings-tab" class="tab-content">
         <div class="card">
             <h2 style="font-size:18px; margin:0 0 12px;">⚙️ Основные настройки</h2>
+
             <div class="settings-group">
                 <label for="fullRangeSetting">Полный запас хода (км)</label>
                 <input type="number" id="fullRangeSetting" step="0.5" min="1" placeholder="Напр. 60">
                 <div class="hint">Расчётный пробег при 100% заряде</div>
             </div>
+
             <div class="settings-group">
-                <label for="chargeHoursSetting">Время полной зарядки (часы)</label>
-                <input type="number" id="chargeHoursSetting" step="0.1" min="0.1" placeholder="Напр. 4.0">
-                <div class="hint">Сколько часов требуется для зарядки с 0 до 100%</div>
+                <label for="chargeHoursNormal">Время обычной зарядки (часы)</label>
+                <input type="number" id="chargeHoursNormal" step="0.1" min="0" placeholder="Напр. 4.0">
+                <div class="hint">Оставьте пустым или 0, если режим не используется</div>
             </div>
+
+            <div class="settings-group">
+                <label for="chargeHoursFast">Время быстрой зарядки (часы)</label>
+                <input type="number" id="chargeHoursFast" step="0.1" min="0" placeholder="Напр. 2.0">
+                <div class="hint">Оставьте пустым или 0, если режим не используется</div>
+            </div>
+
             <div class="settings-group">
                 <label for="toIntervalSetting">Интервал ТО (км)</label>
                 <input type="number" id="toIntervalSetting" step="10" min="10" placeholder="Напр. 500">
                 <div class="hint">Напоминание о техобслуживании через каждые N км</div>
             </div>
+
             <hr style="border-color:var(--border); margin:16px 0;">
+
             <div class="settings-group">
                 <label>🔧 Корректировка одометра (км, +/-)</label>
                 <div class="input-row">
@@ -663,19 +702,24 @@
                 </div>
                 <div class="hint">Влияет только на общий пробег, не меняет пробег с зарядки и остаток хода</div>
             </div>
+
             <hr style="border-color:var(--border); margin:16px 0;">
+
             <div class="settings-group">
                 <label for="notesInput">📝 Заметки (на память)</label>
                 <textarea id="notesInput" placeholder="Напишите что угодно: дата замены колодок, номер телефона мастера, примечания..."></textarea>
                 <div class="hint">Сохраняются автоматически при вводе</div>
             </div>
+
             <hr style="border-color:var(--border); margin:16px 0;">
+
             <div class="settings-section-title">📤 Экспорт данных</div>
             <div style="display: flex; gap: 10px; margin-top: 8px;">
                 <button class="btn btn-outline btn-sm" id="exportCsvBtn" style="flex:1;">CSV</button>
                 <button class="btn btn-outline btn-sm" id="exportJsonBtn" style="flex:1;">JSON</button>
             </div>
             <div class="hint" style="margin-top: 4px;">Выгрузить все записи в файл</div>
+
             <div class="settings-section-title" style="margin-top:20px;">📥 Импорт данных</div>
             <div style="display: flex; gap: 10px; margin-top: 8px;">
                 <button class="btn btn-outline btn-sm" id="importCsvBtn" style="flex:1;">CSV</button>
@@ -684,6 +728,7 @@
             <div class="hint" style="margin-top: 4px;">Восстановить данные из файла (заменит текущие)</div>
             <input type="file" id="csvFileInput" class="hidden-input" accept=".csv">
             <input type="file" id="jsonFileInput" class="hidden-input" accept=".json">
+
             <button class="btn btn-danger" id="resetAllBtn" style="width:100%; margin-top:20px;">🗑 Сбросить все данные</button>
         </div>
     </div>
@@ -695,7 +740,9 @@
         function defaultData() {
             return {
                 fullRange: 60,
-                chargeHoursFull: 4.0,
+                chargeHoursNormal: 4.0,
+                chargeHoursFast: 0,
+                chargeMode: 'normal',
                 chargeOdometer: 0,
                 chargePercent: 100,
                 trips: [],
@@ -713,7 +760,9 @@
                 const raw = localStorage.getItem(STORAGE_KEY);
                 if (raw) {
                     const data = JSON.parse(raw);
-                    if (data.chargeHoursFull === undefined) data.chargeHoursFull = 4.0;
+                    if (data.chargeHoursNormal === undefined) data.chargeHoursNormal = 4.0;
+                    if (data.chargeHoursFast === undefined) data.chargeHoursFast = 0;
+                    if (data.chargeMode === undefined) data.chargeMode = 'normal';
                     if (data.chargePercent === undefined) data.chargePercent = 100;
                     if (data.toInterval === undefined) data.toInterval = 500;
                     if (data.lastToNotified === undefined) data.lastToNotified = 0;
@@ -768,6 +817,25 @@
             el.classList.add('show');
             clearTimeout(toastTimer);
             toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+        }
+
+        // ---------- Определение активного режима и времени ----------
+        function getChargeModeAndTime(data) {
+            const hasNormal = data.chargeHoursNormal && data.chargeHoursNormal > 0;
+            const hasFast = data.chargeHoursFast && data.chargeHoursFast > 0;
+
+            if (hasNormal && hasFast) {
+                const mode = data.chargeMode || 'normal';
+                const hours = mode === 'fast' ? data.chargeHoursFast : data.chargeHoursNormal;
+                return { mode, hours, both: true };
+            }
+            if (hasNormal) {
+                return { mode: 'normal', hours: data.chargeHoursNormal, both: false };
+            }
+            if (hasFast) {
+                return { mode: 'fast', hours: data.chargeHoursFast, both: false };
+            }
+            return { mode: 'normal', hours: 4.0, both: false };
         }
 
         // ---------- Отрисовка основной вкладки ----------
@@ -832,6 +900,22 @@
                 }
             }
 
+            const modeInfo = getChargeModeAndTime(data);
+            const toggleEl = document.getElementById('chargeModeToggle');
+            if (modeInfo.both) {
+                toggleEl.style.display = 'flex';
+                const buttons = toggleEl.querySelectorAll('button');
+                buttons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.mode === modeInfo.mode);
+                });
+            } else {
+                toggleEl.style.display = 'none';
+                if (data.chargeMode !== modeInfo.mode) {
+                    data.chargeMode = modeInfo.mode;
+                    saveData(data);
+                }
+            }
+
             updateChargeAddInfo(data);
         }
 
@@ -839,9 +923,13 @@
             const slider = document.getElementById('chargeAddSlider');
             if (!slider) return;
             const addPercent = parseInt(slider.value);
-            const hours = (addPercent / 100) * data.chargeHoursFull;
+            const modeInfo = getChargeModeAndTime(data);
+            const hours = (addPercent / 100) * modeInfo.hours;
             const info = document.getElementById('chargeAddInfo');
-            if (info) info.textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
+            if (info) {
+                // Убрали добавление (обычная/быстрая) – теперь только процент и часы
+                info.textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
+            }
         }
 
         // ---------- СТАТИСТИКА ----------
@@ -897,7 +985,6 @@
                     }
                 }
 
-                // ----- Пробег -----
                 let tripEntries = data.trips.filter(t => t.type === 'trip');
                 if (period.startsWith('custom_')) {
                     tripEntries = filterTrips(tripEntries);
@@ -954,7 +1041,6 @@
                 const unit = period === 'custom_year' ? 'км/мес' : 'км';
                 drawChart('statsChart', filtered, unit, '#3b82f6');
 
-                // ----- Зарядки -----
                 let chargeLog = data.chargeLog || [];
                 if (period.startsWith('custom_')) {
                     chargeLog = chargeLog.filter(c => {
@@ -1023,7 +1109,7 @@
             }
         }
 
-        // ---------- ОТРИСОВКА ГРАФИКА (ИСПРАВЛЕНА) ----------
+        // ---------- ОТРИСОВКА ГРАФИКА ----------
         function drawChart(canvasId, data, unit, color) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
@@ -1054,7 +1140,6 @@
 
             const values = data.map(item => item[1]);
             const maxVal = Math.max(...values, 1);
-            // Увеличен отступ слева и снизу, чтобы подписи не обрезались
             const padding = { top: 20, bottom: 25, left: 45, right: 15 };
             const chartW = width - padding.left - padding.right;
             const chartH = height - padding.top - padding.bottom;
@@ -1104,7 +1189,8 @@
                 if (el) el.value = val;
             };
             setVal('fullRangeSetting', data.fullRange);
-            setVal('chargeHoursSetting', data.chargeHoursFull);
+            setVal('chargeHoursNormal', data.chargeHoursNormal);
+            setVal('chargeHoursFast', data.chargeHoursFast);
             setVal('toIntervalSetting', data.toInterval);
             setVal('notesInput', data.notes || '');
         }
@@ -1194,7 +1280,8 @@
             document.getElementById('timeModal').classList.add('open');
             const currentPercent = parseInt(document.getElementById('chargeAddSlider').value);
             const data = loadData();
-            const totalHours = (currentPercent / 100) * data.chargeHoursFull;
+            const modeInfo = getChargeModeAndTime(data);
+            const totalHours = (currentPercent / 100) * modeInfo.hours;
             const hours = Math.floor(totalHours);
             const minutes = Math.round((totalHours - hours) * 60);
             document.getElementById('modalHours').value = hours;
@@ -1214,13 +1301,15 @@
                 return;
             }
             const data = loadData();
-            const fullMinutes = data.chargeHoursFull * 60;
+            const modeInfo = getChargeModeAndTime(data);
+            const fullMinutes = modeInfo.hours * 60;
             let percent = Math.min(100, (totalMinutes / fullMinutes) * 100);
             percent = Math.round(percent);
             if (percent < 1) percent = 1;
             document.getElementById('chargeAddSlider').value = percent;
             updateChargeAddInfo(data);
             closeTimeModal();
+            // Убрали добавление (обычная/быстрая) в тосте
             showToast(`⏱ Установлено ${hours}ч ${minutes}мин → ${percent}%`);
         }
 
@@ -1233,12 +1322,21 @@
         }
 
         // ---- Настройки ----
-        function saveSetting(field, value) {
+        function saveSetting(field, value, allowZero = false) {
             const data = loadData();
+            if (!allowZero && (isNaN(value) || value <= 0)) {
+                showToast('Введите положительное число');
+                const el = document.getElementById(field === 'fullRange' ? 'fullRangeSetting' :
+                                                    field === 'chargeHoursNormal' ? 'chargeHoursNormal' :
+                                                    field === 'chargeHoursFast' ? 'chargeHoursFast' :
+                                                    field === 'toInterval' ? 'toIntervalSetting' : '');
+                if (el) el.value = data[field];
+                return;
+            }
             data[field] = value;
             saveData(data);
             renderAll();
-            if (field === 'fullRange' || field === 'chargeHoursFull') {
+            if (field === 'fullRange' || field === 'chargeHoursNormal' || field === 'chargeHoursFast') {
                 renderMain(data);
             }
             showToast(`Настройка сохранена`);
@@ -1367,7 +1465,9 @@
                     if (json.chargeOdometer !== undefined) data.chargeOdometer = json.chargeOdometer;
                     if (json.chargePercent !== undefined) data.chargePercent = json.chargePercent;
                     if (json.fullRange !== undefined) data.fullRange = json.fullRange;
-                    if (json.chargeHoursFull !== undefined) data.chargeHoursFull = json.chargeHoursFull;
+                    if (json.chargeHoursNormal !== undefined) data.chargeHoursNormal = json.chargeHoursNormal;
+                    if (json.chargeHoursFast !== undefined) data.chargeHoursFast = json.chargeHoursFast;
+                    if (json.chargeMode !== undefined) data.chargeMode = json.chargeMode;
                     if (json.toInterval !== undefined) data.toInterval = json.toInterval;
                     if (json.notes !== undefined) data.notes = json.notes;
                     saveData(data);
@@ -1452,10 +1552,27 @@
             }
         }
 
+        // ---- Обработчик переключения режима зарядки ----
+        function setupChargeModeToggle() {
+            const buttons = document.querySelectorAll('#chargeModeToggle button');
+            buttons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const mode = this.dataset.mode;
+                    const data = loadData();
+                    data.chargeMode = mode;
+                    saveData(data);
+                    renderMain(data);
+                    updateChargeAddInfo(data);
+                    showToast(`Режим: ${mode === 'fast' ? 'Быстрая' : 'Обычная'}`);
+                });
+            });
+        }
+
         // ---- ИНИЦИАЛИЗАЦИЯ ----
         document.addEventListener('DOMContentLoaded', function() {
             populateCustomDateSelects();
             updateDateSelectsVisibility();
+            setupChargeModeToggle();
 
             const data = loadData();
             if (data.theme === 'dark') {
@@ -1507,22 +1624,21 @@
             });
 
             // Настройки
-            function setupSettingInput(id, field) {
+            function setupSettingInput(id, field, allowZero = false) {
                 const input = document.getElementById(id);
                 input.addEventListener('change', function() {
                     let val = parseFloat(this.value);
-                    if (isNaN(val) || val <= 0) {
-                        showToast('Введите положительное число');
-                        const data = loadData();
-                        this.value = data[field];
-                        return;
+                    if (isNaN(val)) {
+                        val = 0;
+                        this.value = 0;
                     }
-                    saveSetting(field, val);
+                    saveSetting(field, val, allowZero);
                 });
             }
-            setupSettingInput('fullRangeSetting', 'fullRange');
-            setupSettingInput('chargeHoursSetting', 'chargeHoursFull');
-            setupSettingInput('toIntervalSetting', 'toInterval');
+            setupSettingInput('fullRangeSetting', 'fullRange', false);
+            setupSettingInput('chargeHoursNormal', 'chargeHoursNormal', true);
+            setupSettingInput('chargeHoursFast', 'chargeHoursFast', true);
+            setupSettingInput('toIntervalSetting', 'toInterval', false);
 
             // Корректировка
             document.getElementById('correctionBtn').addEventListener('click', function() {
