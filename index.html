@@ -1234,14 +1234,14 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.0.5";
+        const APP_VERSION = "3.0.8";
         const RELEASE_NOTES = [
+            "🔧 Исправлено редактирование зарядок (теперь ID генерируется при отображении)",
             "🛵 Поддержка нескольких скутеров",
             "➕ Добавление, переименование, удаление скутеров",
             "📊 Статистика и расходы привязаны к активному скутеру",
             "📱 Адаптивный интерфейс для горизонтальной ориентации",
-            "🔧 Исправлено отображение тарифов в статистике",
-            "👉 Добавлена навигация свайпами между вкладками"
+            "👉 Навигация свайпами между вкладками"
         ];
 
         function checkForUpdates() {
@@ -1300,6 +1300,14 @@
                 };
             }
 
+            // Функция для гарантированного создания ID
+            function ensureChargeId(charge) {
+                if (!charge.id) {
+                    charge.id = 'charge_' + (charge.date || Date.now()) + '_' + Math.random().toString(36).substr(2, 6);
+                }
+                return charge.id;
+            }
+
             function loadAllScooters() {
                 try {
                     const raw = localStorage.getItem(STORAGE_KEY);
@@ -1308,6 +1316,13 @@
                         if (store.scooters && Array.isArray(store.scooters) && store.scooters.length > 0) {
                             store.scooters = store.scooters.map(s => {
                                 if (!s.data) s.data = defaultScooterData();
+                                // Миграция старых chargeLog — добавляем id, если его нет
+                                if (s.data.chargeLog) {
+                                    s.data.chargeLog = s.data.chargeLog.map(c => {
+                                        ensureChargeId(c);
+                                        return c;
+                                    });
+                                }
                                 return s;
                             });
                             return store;
@@ -1322,6 +1337,12 @@
                     const oldRaw = localStorage.getItem('scooter_tracker_data_v2');
                     if (oldRaw) {
                         const oldData = JSON.parse(oldRaw);
+                        if (oldData.chargeLog) {
+                            oldData.chargeLog = oldData.chargeLog.map(c => {
+                                ensureChargeId(c);
+                                return c;
+                            });
+                        }
                         const newStore = {
                             scooters: [{
                                 id: 'scooter_' + Date.now(),
@@ -1519,7 +1540,7 @@
                 document.getElementById('chargeAddInfo').textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
             }
 
-            // ---- СТАТИСТИКА ----
+            // ---- СТАТИСТИКА (с ID) ----
             function renderStats(data) {
                 if (!data) return;
                 try {
@@ -1588,7 +1609,7 @@
                     const unit = (period === 'custom_year') ? 'км/мес' : 'км';
                     drawChart('statsChart', sorted, unit, '#3b82f6');
 
-                    // Зарядки
+                    // Зарядки — используем ID, генерируем при необходимости
                     let chargeLog = data.chargeLog || [];
                     if (period === 'today') {
                         const today = new Date().toDateString();
@@ -1624,7 +1645,9 @@
                         chargeDetailDiv.innerHTML = '<div class="empty">Нет зарядок за выбранный период</div>';
                     } else {
                         let html = '';
-                        chargeLog.slice().reverse().forEach((c, idx) => {
+                        // Переворачиваем для отображения сначала новых
+                        const reversed = chargeLog.slice().reverse();
+                        reversed.forEach((c) => {
                             const d = new Date(c.date);
                             const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                             const tariffIcons = {
@@ -1636,20 +1659,24 @@
                             const tariffType = c.tariffType ? c.tariffType.toLowerCase() : '';
                             const tariffLabel = tariffIcons[tariffType] || '❓';
                             const costStr = (c.cost !== null && c.cost !== undefined) ? ` ${c.cost.toFixed(2)} ₽` : '';
-                            html += `<div class="stat-item" data-charge-idx="${idx}">
+                            // Гарантируем ID
+                            const chargeId = ensureChargeId(c);
+                            html += `<div class="stat-item" data-charge-id="${chargeId}">
                                 <span class="date">${dateStr} ${tariffLabel}</span>
                                 <span class="dist">+${c.addedPercent}% → ${c.newPercent}%${costStr}</span>
-                                <span class="actions"><button class="edit-charge-btn" data-idx="${idx}" title="Редактировать тариф">✏️</button></span>
+                                <span class="actions"><button class="edit-charge-btn" data-id="${chargeId}" title="Редактировать тариф">✏️</button></span>
                             </div>`;
                         });
                         chargeDetailDiv.innerHTML = html;
                         chargeDetailDiv.querySelectorAll('.edit-charge-btn').forEach(btn => {
                             btn.addEventListener('click', function(e) {
                                 e.stopPropagation();
-                                const idx = parseInt(this.dataset.idx);
-                                openEditChargeModal(idx);
+                                const id = this.dataset.id;
+                                openEditChargeModal(id);
                             });
                         });
+                        // Сохраняем данные, чтобы ID зафиксировались
+                        saveActiveScooterData(data);
                     }
                     const chargeDayMap = new Map();
                     chargeLog.forEach(c => {
@@ -1672,7 +1699,7 @@
                 chargeLog.forEach(c => {
                     if (c.cost !== null && c.cost !== undefined && c.cost > 0) {
                         allExpenses.push({
-                            id: 'charge_' + c.date,
+                            id: 'charge_' + c.id,
                             date: c.date,
                             category: 'charge',
                             amount: c.cost,
@@ -2033,7 +2060,9 @@
                 }
                 const modeInfo = getChargeModeAndTime(data);
                 const cost = calcChargeCost(data, addPercent, tariffType, manualPrice, modeInfo.mode);
+                const chargeId = 'charge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
                 data.chargeLog.push({
+                    id: chargeId,
                     date: Date.now(),
                     addedPercent: addPercent,
                     newPercent: newPercent,
@@ -2051,14 +2080,20 @@
                 showToast(`🔌 Заряд до ${newPercent}% (добавлено ${addPercent}%, стоимость ${cost.toFixed(2)} ₽)`);
             }
 
-            let editChargeIndex = -1;
+            let editChargeId = null;
 
-            function openEditChargeModal(idx) {
+            function openEditChargeModal(id) {
                 const data = loadActiveScooterData();
                 if (!data) return;
-                const charge = data.chargeLog[idx];
-                if (!charge) return;
-                editChargeIndex = idx;
+                // Поиск по ID
+                let charge = data.chargeLog.find(c => c.id === id);
+                if (!charge) {
+                    // Если не найден, пробуем сгенерировать ID и найти заново (может быть, ID не сохранился)
+                    // Но мы уже гарантируем ID в renderStats, поэтому такого не должно быть
+                    showToast('Зарядка не найдена');
+                    return;
+                }
+                editChargeId = id;
                 document.getElementById('editChargeTariffType').value = charge.tariffType || 'night';
                 document.getElementById('editChargePricePerKwh').value = charge.pricePerKwh !== null ? charge.pricePerKwh : '';
                 document.getElementById('editChargeModal').classList.add('open');
@@ -2073,8 +2108,8 @@
             function saveEditCharge() {
                 const data = loadActiveScooterData();
                 if (!data) return;
-                const charge = data.chargeLog[editChargeIndex];
-                if (!charge) return;
+                const charge = data.chargeLog.find(c => c.id === editChargeId);
+                if (!charge) { showToast('Зарядка не найдена'); return; }
                 const tariffType = document.getElementById('editChargeTariffType').value;
                 let pricePerKwh = null;
                 if (tariffType === 'other') {
@@ -2213,8 +2248,16 @@
                             const cat = parts[8]?.trim() || '';
                             const desc = parts[9]?.trim() || '';
                             if (type === 'Зарядка' && !isNaN(added) && !isNaN(newP)) {
-                                newChargeLog.push({ date: date.getTime(), addedPercent: added, newPercent: newP, tariffType: tariff,
-                                    pricePerKwh: isNaN(price) ? null : price, cost: isNaN(cost) ? null : cost, chargeMode: 'normal' });
+                                newChargeLog.push({
+                                    id: 'charge_' + date.getTime() + '_' + Math.random().toString(36).substr(2, 6),
+                                    date: date.getTime(),
+                                    addedPercent: added,
+                                    newPercent: newP,
+                                    tariffType: tariff,
+                                    pricePerKwh: isNaN(price) ? null : price,
+                                    cost: isNaN(cost) ? null : cost,
+                                    chargeMode: 'normal'
+                                });
                             } else if (type === 'Расход' && !isNaN(parseFloat(parts[9]?.trim()))) {
                                 const amount = parseFloat(parts[9].trim());
                                 if (!isNaN(amount) && amount > 0) {
@@ -2256,6 +2299,10 @@
                         data.trips = json.trips;
                         data.totalTrips = data.trips.reduce((s, t) => t.type === 'trip' ? s + t.distance : s, 0);
                         data.chargeLog = json.chargeLog || [];
+                        data.chargeLog = data.chargeLog.map(c => {
+                            ensureChargeId(c);
+                            return c;
+                        });
                         data.expenses = json.expenses || [];
                         Object.keys(json).forEach(key => {
                             if (['trips', 'chargeLog', 'expenses', 'totalTrips'].includes(key)) return;
@@ -2523,7 +2570,6 @@
                     }
 
                     document.addEventListener('touchstart', function(e) {
-                        // Игнорируем касания на интерактивных элементах
                         const target = e.target;
                         if (target.closest('input') || target.closest('button') || target.closest('.charge-slider') || target.closest('.tariff-selector')) {
                             return;
