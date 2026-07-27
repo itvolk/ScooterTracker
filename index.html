@@ -10,7 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <title>Трекер электроскутера</title>
     <style>
-        /* ===== БАЗОВЫЕ ПЕРЕМЕННЫЕ (без изменений) ===== */
+        /* ===== БАЗОВЫЕ ПЕРЕМЕННЫЕ ===== */
         :root {
             --bg: #f0f4f8;
             --card: #ffffff;
@@ -109,15 +109,29 @@
         }
         .tab-btn {
             flex: 1;
-            padding: 10px 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 6px 2px;
             border: none;
             background: transparent;
             border-radius: 14px;
             font-weight: 600;
-            font-size: 14px;
             color: var(--tab-inactive);
             cursor: pointer;
             transition: 0.2s;
+            gap: 2px;
+            min-height: 48px;
+        }
+        .tab-btn .tab-icon {
+            font-size: 18px;
+            line-height: 1;
+        }
+        .tab-btn .tab-label {
+            font-size: 10px;
+            line-height: 1;
+            letter-spacing: 0.3px;
         }
         .tab-btn.active {
             background: var(--card);
@@ -743,10 +757,22 @@
 
     <!-- ======== ВКЛАДКИ ======== -->
     <div class="tabs">
-        <button class="tab-btn active" data-tab="main">📊 Основная</button>
-        <button class="tab-btn" data-tab="stats">📈 Статистика</button>
-        <button class="tab-btn" data-tab="expenses">💰 Расходы</button>
-        <button class="tab-btn" data-tab="settings">⚙️ Настройки</button>
+        <button class="tab-btn active" data-tab="main">
+            <span class="tab-icon">📊</span>
+            <span class="tab-label">Основная</span>
+        </button>
+        <button class="tab-btn" data-tab="stats">
+            <span class="tab-icon">📈</span>
+            <span class="tab-label">Статистика</span>
+        </button>
+        <button class="tab-btn" data-tab="expenses">
+            <span class="tab-icon">💰</span>
+            <span class="tab-label">Расходы</span>
+        </button>
+        <button class="tab-btn" data-tab="settings">
+            <span class="tab-icon">⚙️</span>
+            <span class="tab-label">Настройки</span>
+        </button>
     </div>
 
     <!-- ======== ОСНОВНАЯ ======== -->
@@ -878,7 +904,7 @@
         </div>
     </div>
 
-    <!-- ======== НАСТРОЙКИ (добавлены КПД) ======== -->
+    <!-- ======== НАСТРОЙКИ ======== -->
     <div id="settings-tab" class="tab-content">
         <div class="card">
             <h2 style="font-size:18px; margin:0 0 12px;">⚙️ Основные настройки</h2>
@@ -979,7 +1005,7 @@
     </div>
 
     <script>
-        // ======================== ОСНОВНОЙ СКРИПТ ========================
+        // ======================== ОСНОВНОЙ СКРИПТ (без изменений) ========================
         try {
             const STORAGE_KEY = 'scooter_tracker_data_v2';
 
@@ -1097,19 +1123,15 @@
                 return 0;
             }
 
-            // Новая функция расчёта стоимости с учётом КПД
             function calcChargeCost(data, addedPercent, tariffType, manualPrice, chargeMode) {
                 const capacity = data.batteryCapacity || 1.0;
-                // Количество энергии, залитой в батарею (кВт·ч)
                 const energyBattery = (addedPercent / 100) * capacity;
-                // КПД в зависимости от режима
                 let efficiency;
                 if (chargeMode === 'fast') {
                     efficiency = data.chargeEfficiencyFast || 0.85;
                 } else {
                     efficiency = data.chargeEfficiencyNormal || 0.9;
                 }
-                // Энергия, потреблённая из сети (с учётом потерь)
                 const energyGrid = energyBattery / efficiency;
                 const price = getTariffPrice(data, tariffType, manualPrice);
                 return energyGrid * price;
@@ -1126,7 +1148,6 @@
                 toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
             }
 
-            // ---- Рендеринг основной вкладки ----
             function renderMain(data) {
                 const total = calcTotal(data.trips);
                 const battery = calcBattery(data);
@@ -1220,7 +1241,6 @@
                 }
             }
 
-            // ---- Статистика ----
             function renderStats(data) {
                 try {
                     const period = document.getElementById('periodSelect')?.value || 'today';
@@ -1400,7 +1420,6 @@
                 }
             }
 
-            // ---- Расходы ----
             function renderExpenses(data) {
                 const expenses = data.expenses || [];
                 const chargeLog = data.chargeLog || [];
@@ -1503,7 +1522,6 @@
                 showToast('🗑️ Расход удалён');
             }
 
-            // ---- Отрисовка графика ----
             function drawChart(canvasId, data, unit, color) {
                 const canvas = document.getElementById(canvasId);
                 if (!canvas) return;
@@ -1576,7 +1594,6 @@
                 });
             }
 
-            // ---- Настройки ----
             function renderSettings(data) {
                 const setVal = (id, val) => {
                     const el = document.getElementById(id);
@@ -1604,7 +1621,6 @@
                 if (expTab && expTab.classList.contains('active')) renderExpenses(data);
             }
 
-            // ---- Действия ----
             function addTrip(distance) {
                 if (distance <= 0) {
                     showToast('Введите положительное число');
@@ -1647,7 +1663,6 @@
                 showToast(`🔧 Коррекция ${value >= 0 ? '+' : ''}${value.toFixed(1)} км (общий пробег изменён)`);
             }
 
-            // ---- Зарядка с тарифом и учётом КПД ----
             function chargeAdd() {
                 const data = loadData();
                 const addPercent = parseInt(document.getElementById('chargeAddSlider').value);
@@ -1675,11 +1690,9 @@
                     }
                 }
 
-                // Определяем режим зарядки (обычная/быстрая)
                 const modeInfo = getChargeModeAndTime(data);
-                const chargeMode = modeInfo.mode; // 'normal' или 'fast'
+                const chargeMode = modeInfo.mode;
 
-                // Расчёт стоимости с учётом КПД
                 const cost = calcChargeCost(data, addPercent, tariffType, manualPrice, chargeMode);
 
                 data.chargeLog.push({
@@ -1690,7 +1703,7 @@
                     pricePerKwh: tariffType === 'other' ? manualPrice : (tariffType === 'free' ? 0 : getTariffPrice(data,
                         tariffType)),
                     cost: cost,
-                    chargeMode: chargeMode // сохраняем режим для истории
+                    chargeMode: chargeMode
                 });
 
                 data.chargePercent = newPercent;
@@ -1702,7 +1715,6 @@
                 showToast(`🔌 Заряд до ${newPercent}% (добавлено ${addPercent}%, стоимость ${cost.toFixed(2)} ₽)`);
             }
 
-            // ---- Редактирование зарядки (с учётом КПД) ----
             let editChargeIndex = -1;
 
             function openEditChargeModal(idx) {
@@ -1746,8 +1758,7 @@
                 }
                 charge.tariffType = tariffType;
                 charge.pricePerKwh = pricePerKwh;
-                // Пересчитываем стоимость с текущими КПД
-                const chargeMode = charge.chargeMode || 'normal'; // если нет, считаем обычной
+                const chargeMode = charge.chargeMode || 'normal';
                 const cost = calcChargeCost(data, charge.addedPercent, tariffType, pricePerKwh, chargeMode);
                 charge.cost = cost;
                 saveData(data);
@@ -1756,7 +1767,6 @@
                 showToast('✅ Зарядка обновлена');
             }
 
-            // ---- Расходы ----
             function addExpense() {
                 const category = document.getElementById('expenseCategory').value;
                 const amount = parseFloat(document.getElementById('expenseAmount').value);
@@ -1781,10 +1791,8 @@
                 showToast(`➕ Расход добавлен (${amount.toFixed(2)} ₽)`);
             }
 
-            // ---- Настройки ----
             function saveSetting(field, value, allowZero = false) {
                 const data = loadData();
-                // Для КПД проверяем диапазон
                 if ((field === 'chargeEfficiencyNormal' || field === 'chargeEfficiencyFast') && (value < 0 || value > 1)) {
                     showToast('КПД должен быть от 0 до 1');
                     const el = document.getElementById(field === 'chargeEfficiencyNormal' ? 'chargeEfficiencyNormal' :
@@ -1821,7 +1829,6 @@
                 }
             }
 
-            // ---- Экспорт/Импорт (добавлены КПД) ----
             function exportCSV() {
                 const data = loadData();
                 if (data.trips.length === 0 && data.chargeLog.length === 0 && data.expenses.length === 0) {
@@ -1910,7 +1917,7 @@
                                     tariffType: tariff,
                                     pricePerKwh: isNaN(price) ? null : price,
                                     cost: isNaN(cost) ? null : cost,
-                                    chargeMode: 'normal' // по умолчанию
+                                    chargeMode: 'normal'
                                 });
                             } else if (type === 'Расход' && !isNaN(parseFloat(parts[9]?.trim()))) {
                                 const amount = parseFloat(parts[9].trim());
@@ -1995,7 +2002,6 @@
                 reader.readAsText(file);
             }
 
-            // ---- Тема ----
             function toggleTheme() {
                 const body = document.body;
                 const data = loadData();
@@ -2007,7 +2013,6 @@
                 renderAll();
             }
 
-            // ---- Заполнение селектов дат ----
             function populateCustomDateSelects() {
                 const yearSelect = document.getElementById('customYear');
                 const monthSelect = document.getElementById('customMonth');
@@ -2063,7 +2068,6 @@
                 }
             }
 
-            // ---- Обработчики тарифов ----
             function setupTariffSelector() {
                 const buttons = document.querySelectorAll('#tariffSelector button[data-tariff]');
                 const priceInput = document.getElementById('tariffPriceInput');
@@ -2085,7 +2089,6 @@
                 priceInput.style.display = 'none';
             }
 
-            // ---- Обработчик режима зарядки ----
             function setupChargeModeToggle() {
                 const buttons = document.querySelectorAll('#chargeModeToggle button');
                 buttons.forEach(btn => {
@@ -2101,7 +2104,6 @@
                 });
             }
 
-            // ---- ИНИЦИАЛИЗАЦИЯ ----
             document.addEventListener('DOMContentLoaded', function() {
                 try {
                     populateCustomDateSelects();
@@ -2119,7 +2121,6 @@
 
                     renderAll();
 
-                    // Вкладки
                     document.querySelectorAll('.tab-btn').forEach(btn => {
                         btn.addEventListener('click', function() {
                             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -2134,7 +2135,6 @@
                         });
                     });
 
-                    // Основные кнопки
                     document.getElementById('addBtn').addEventListener('click', function() {
                         const val = parseFloat(document.getElementById('tripInput').value);
                         if (!isNaN(val)) addTrip(val);
@@ -2152,7 +2152,6 @@
                     });
                     document.getElementById('chargeBtn').addEventListener('click', chargeAdd);
 
-                    // Модалка времени
                     const timeModal = document.getElementById('timeModal');
                     const timeModalOpenBtn = document.getElementById('timeModalOpenBtn');
                     const modalCancelBtn = document.getElementById('modalCancelBtn');
@@ -2201,7 +2200,6 @@
                         if (e.target === this) timeModal.classList.remove('open');
                     });
 
-                    // Модалка редактирования зарядки
                     const editChargeModal = document.getElementById('editChargeModal');
                     const editChargeCancelBtn = document.getElementById('editChargeCancelBtn');
                     const editChargeSaveBtn = document.getElementById('editChargeSaveBtn');
@@ -2223,7 +2221,6 @@
                         updateEditChargePriceVisibility();
                     });
 
-                    // Модалка добавления расхода
                     const addExpenseModal = document.getElementById('addExpenseModal');
                     const addExpenseCancelBtn = document.getElementById('addExpenseCancelBtn');
                     const addExpenseSaveBtn = document.getElementById('addExpenseSaveBtn');
@@ -2242,13 +2239,11 @@
                         if (e.target === this) addExpenseModal.classList.remove('open');
                     });
 
-                    // Кнопка добавления расхода
                     document.getElementById('addExpenseBtn').addEventListener('click', function() {
                         addExpenseModal.classList.add('open');
                     });
 
-                    // Настройки
-                    function setupSettingInput(id, field, allowZero = false, isEfficiency = false) {
+                    function setupSettingInput(id, field, allowZero = false) {
                         const input = document.getElementById(id);
                         input.addEventListener('change', function() {
                             let val = parseFloat(this.value);
@@ -2269,7 +2264,6 @@
                     setupSettingInput('tariffDay', 'tariffDay', true);
                     setupSettingInput('toIntervalSetting', 'toInterval', false);
 
-                    // Корректировка
                     document.getElementById('correctionBtn').addEventListener('click', function() {
                         const val = parseFloat(document.getElementById('correctionInput').value);
                         if (!isNaN(val)) applyCorrection(val);
@@ -2279,7 +2273,6 @@
                         if (e.key === 'Enter') document.getElementById('correctionBtn').click();
                     });
 
-                    // Заметки
                     const notesInput = document.getElementById('notesInput');
                     notesInput.addEventListener('change', function() {
                         const data = loadData();
@@ -2295,7 +2288,6 @@
                         }, 1000);
                     });
 
-                    // Экспорт/Импорт
                     document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
                     document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
 
@@ -2325,7 +2317,6 @@
 
                     document.getElementById('resetAllBtn').addEventListener('click', resetAllData);
 
-                    // Статистика
                     document.getElementById('periodSelect').addEventListener('change', function() {
                         updateDateSelectsVisibility();
                         const data = loadData();
@@ -2336,7 +2327,6 @@
                         renderStats(data);
                     });
 
-                    // Обновление расходов
                     document.getElementById('refreshExpensesBtn').addEventListener('click', function() {
                         const data = loadData();
                         renderExpenses(data);
