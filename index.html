@@ -1234,12 +1234,13 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.0.3";
+        const APP_VERSION = "3.0.4";
         const RELEASE_NOTES = [
             "🛵 Поддержка нескольких скутеров",
             "➕ Добавление, переименование, удаление скутеров",
             "📊 Статистика и расходы привязаны к активному скутеру",
-            "📱 Адаптивный интерфейс для горизонтальной ориентации"
+            "📱 Адаптивный интерфейс для горизонтальной ориентации",
+            "🔧 Исправлено отображение тарифов в статистике (теперь 🆓 для бесплатных зарядок)"
         ];
 
         function checkForUpdates() {
@@ -1517,6 +1518,7 @@
                 document.getElementById('chargeAddInfo').textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
             }
 
+            // ---- СТАТИСТИКА (исправлено отображение тарифов) ----
             function renderStats(data) {
                 if (!data) return;
                 try {
@@ -1585,7 +1587,7 @@
                     const unit = (period === 'custom_year') ? 'км/мес' : 'км';
                     drawChart('statsChart', sorted, unit, '#3b82f6');
 
-                    // Зарядки
+                    // Зарядки — исправлено отображение тарифов
                     let chargeLog = data.chargeLog || [];
                     if (period === 'today') {
                         const today = new Date().toDateString();
@@ -1615,6 +1617,7 @@
                     document.getElementById('chargeTotalPercent').textContent = totalAdded.toFixed(1);
                     document.getElementById('chargeAvgPercent').textContent = avgAdded.toFixed(1);
                     document.getElementById('chargeMaxPercent').textContent = maxAdded.toFixed(1);
+
                     const chargeDetailDiv = document.getElementById('chargeDetail');
                     if (chargeLog.length === 0) {
                         chargeDetailDiv.innerHTML = '<div class="empty">Нет зарядок за выбранный период</div>';
@@ -1623,7 +1626,15 @@
                         chargeLog.slice().reverse().forEach((c, idx) => {
                             const d = new Date(c.date);
                             const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                            const tariffLabel = c.tariffType ? (c.tariffType === 'free' ? '🆓' : c.tariffType === 'night' ? '🌙' : c.tariffType === 'day' ? '☀️' : '🔧') : '❓';
+                            // ИСПРАВЛЕНО: используем объект соответствия
+                            const tariffIcons = {
+                                'free': '🆓',
+                                'night': '🌙',
+                                'day': '☀️',
+                                'other': '🔧'
+                            };
+                            const tariffType = c.tariffType ? c.tariffType.toLowerCase() : '';
+                            const tariffLabel = tariffIcons[tariffType] || '❓';
                             const costStr = (c.cost !== null && c.cost !== undefined) ? ` ${c.cost.toFixed(2)} ₽` : '';
                             html += `<div class="stat-item" data-charge-idx="${idx}">
                                 <span class="date">${dateStr} ${tariffLabel}</span>
