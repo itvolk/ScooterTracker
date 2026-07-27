@@ -659,6 +659,18 @@
             font-size: 13px;
             margin-right: 2px;
         }
+        /* Стили для модалки обновления */
+        .release-notes {
+            text-align: left;
+            padding: 0;
+            margin: 12px 0;
+            list-style: none;
+        }
+        .release-notes li {
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
         @media (max-width: 360px) {
             .stat-grid {
                 grid-template-columns: 1fr 1fr;
@@ -676,6 +688,16 @@
 <body>
 
     <div id="toast" class="toast"></div>
+
+    <!-- Модальное окно уведомления об обновлении -->
+    <div class="modal-overlay" id="updateModal">
+        <div class="modal">
+            <h2>🔄 Обновление доступно!</h2>
+            <div style="text-align:center; margin:8px 0; color:var(--text-secondary); font-size:14px;">Версия <span id="newVersion"></span></div>
+            <ul class="release-notes" id="releaseNotesList"></ul>
+            <button class="btn btn-success" id="updateModalOkBtn">✅ Отлично, понял!</button>
+        </div>
+    </div>
 
     <!-- Модальное окно для ввода времени зарядки -->
     <div class="modal-overlay" id="timeModal">
@@ -1005,7 +1027,56 @@
     </div>
 
     <script>
-        // ======================== ОСНОВНОЙ СКРИПТ (без изменений) ========================
+        // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ОБ ОБНОВЛЕНИИ ========================
+        const APP_VERSION = "2.0.1";
+        const RELEASE_NOTES = [
+            "➕ Добавлен учёт расходов (зарядки, ТО, запчасти)",
+            "📊 Статистика: фильтрация по дню/неделе/месяцу/году/произвольной дате",
+            "⚡ Расчёт стоимости зарядки с учётом КПД (обычная/быстрая)",
+            "🔄 Импорт/экспорт данных в CSV и JSON",
+            "🌙 Тёмная тема",
+            "🛠 Исправлены все модальные окна"
+        ];
+
+        function checkForUpdates() {
+            try {
+                const savedVersion = localStorage.getItem('app_version');
+                if (!savedVersion) {
+                    // Первый запуск — сохраняем версию без уведомления
+                    localStorage.setItem('app_version', APP_VERSION);
+                    return;
+                }
+                if (savedVersion !== APP_VERSION) {
+                    // Показываем уведомление
+                    const modal = document.getElementById('updateModal');
+                    document.getElementById('newVersion').textContent = APP_VERSION;
+                    const list = document.getElementById('releaseNotesList');
+                    list.innerHTML = '';
+                    RELEASE_NOTES.forEach(note => {
+                        const li = document.createElement('li');
+                        li.textContent = note;
+                        list.appendChild(li);
+                    });
+                    modal.classList.add('open');
+                    // По нажатию кнопки закрываем и сохраняем новую версию
+                    document.getElementById('updateModalOkBtn').addEventListener('click', function() {
+                        modal.classList.remove('open');
+                        localStorage.setItem('app_version', APP_VERSION);
+                    });
+                    // Закрытие по клику на фон (тоже сохраняет)
+                    modal.addEventListener('click', function(e) {
+                        if (e.target === this) {
+                            modal.classList.remove('open');
+                            localStorage.setItem('app_version', APP_VERSION);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.warn('Ошибка проверки обновлений:', e);
+            }
+        }
+
+        // ======================== ОСНОВНОЙ СКРИПТ ========================
         try {
             const STORAGE_KEY = 'scooter_tracker_data_v2';
 
@@ -2106,6 +2177,9 @@
 
             document.addEventListener('DOMContentLoaded', function() {
                 try {
+                    // Проверка обновлений
+                    checkForUpdates();
+
                     populateCustomDateSelects();
                     updateDateSelectsVisibility();
                     setupTariffSelector();
