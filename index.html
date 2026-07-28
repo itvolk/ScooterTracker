@@ -1234,9 +1234,9 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.0.8";
+        const APP_VERSION = "3.0.9";
         const RELEASE_NOTES = [
-            "🔧 Исправлено редактирование зарядок (теперь ID генерируется при отображении)",
+            "🔧 Исправлено отображение количества поездок в статистике (теперь показывает реальное число поездок, а не количество дней)",
             "🛵 Поддержка нескольких скутеров",
             "➕ Добавление, переименование, удаление скутеров",
             "📊 Статистика и расходы привязаны к активному скутеру",
@@ -1300,7 +1300,6 @@
                 };
             }
 
-            // Функция для гарантированного создания ID
             function ensureChargeId(charge) {
                 if (!charge.id) {
                     charge.id = 'charge_' + (charge.date || Date.now()) + '_' + Math.random().toString(36).substr(2, 6);
@@ -1316,7 +1315,6 @@
                         if (store.scooters && Array.isArray(store.scooters) && store.scooters.length > 0) {
                             store.scooters = store.scooters.map(s => {
                                 if (!s.data) s.data = defaultScooterData();
-                                // Миграция старых chargeLog — добавляем id, если его нет
                                 if (s.data.chargeLog) {
                                     s.data.chargeLog = s.data.chargeLog.map(c => {
                                         ensureChargeId(c);
@@ -1540,7 +1538,7 @@
                 document.getElementById('chargeAddInfo').textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
             }
 
-            // ---- СТАТИСТИКА (с ID) ----
+            // ---- СТАТИСТИКА (исправлен счётчик поездок) ----
             function renderStats(data) {
                 if (!data) return;
                 try {
@@ -1578,6 +1576,10 @@
                         const cutoffStr = cutoff.toISOString().slice(0, 10);
                         tripEntries = tripEntries.filter(t => new Date(t.date).toISOString().slice(0, 10) >= cutoffStr);
                     }
+
+                    // Общее количество поездок за период
+                    const tripCount = tripEntries.length;
+
                     const dayMap = new Map();
                     tripEntries.forEach(t => {
                         const d = new Date(t.date);
@@ -1586,16 +1588,20 @@
                     });
                     const sorted = Array.from(dayMap.entries()).sort((a, b) => a[0].localeCompare(b[0]));
                     let sum = 0,
-                        count = 0,
+                        dayCount = 0,
                         max = 0;
-                    sorted.forEach(([_, dist]) => { sum += dist;
-                        count++;
-                        if (dist > max) max = dist; });
-                    const avg = count > 0 ? sum / count : 0;
+                    sorted.forEach(([_, dist]) => {
+                        sum += dist;
+                        dayCount++;
+                        if (dist > max) max = dist;
+                    });
+                    const avg = dayCount > 0 ? sum / dayCount : 0;
+
                     document.getElementById('statTotal').textContent = sum.toFixed(1);
                     document.getElementById('statAvg').textContent = avg.toFixed(1);
-                    document.getElementById('statCount').textContent = count;
+                    document.getElementById('statCount').textContent = tripCount; // теперь количество поездок
                     document.getElementById('statMax').textContent = max.toFixed(1);
+
                     const detailDiv = document.getElementById('statsDetail');
                     if (sorted.length === 0) {
                         detailDiv.innerHTML = '<div class="empty">Нет данных за выбранный период</div>';
@@ -1609,7 +1615,7 @@
                     const unit = (period === 'custom_year') ? 'км/мес' : 'км';
                     drawChart('statsChart', sorted, unit, '#3b82f6');
 
-                    // Зарядки — используем ID, генерируем при необходимости
+                    // Зарядки
                     let chargeLog = data.chargeLog || [];
                     if (period === 'today') {
                         const today = new Date().toDateString();
@@ -1645,7 +1651,6 @@
                         chargeDetailDiv.innerHTML = '<div class="empty">Нет зарядок за выбранный период</div>';
                     } else {
                         let html = '';
-                        // Переворачиваем для отображения сначала новых
                         const reversed = chargeLog.slice().reverse();
                         reversed.forEach((c) => {
                             const d = new Date(c.date);
@@ -1659,7 +1664,6 @@
                             const tariffType = c.tariffType ? c.tariffType.toLowerCase() : '';
                             const tariffLabel = tariffIcons[tariffType] || '❓';
                             const costStr = (c.cost !== null && c.cost !== undefined) ? ` ${c.cost.toFixed(2)} ₽` : '';
-                            // Гарантируем ID
                             const chargeId = ensureChargeId(c);
                             html += `<div class="stat-item" data-charge-id="${chargeId}">
                                 <span class="date">${dateStr} ${tariffLabel}</span>
@@ -1675,7 +1679,6 @@
                                 openEditChargeModal(id);
                             });
                         });
-                        // Сохраняем данные, чтобы ID зафиксировались
                         saveActiveScooterData(data);
                     }
                     const chargeDayMap = new Map();
@@ -2085,11 +2088,8 @@
             function openEditChargeModal(id) {
                 const data = loadActiveScooterData();
                 if (!data) return;
-                // Поиск по ID
                 let charge = data.chargeLog.find(c => c.id === id);
                 if (!charge) {
-                    // Если не найден, пробуем сгенерировать ID и найти заново (может быть, ID не сохранился)
-                    // Но мы уже гарантируем ID в renderStats, поэтому такого не должно быть
                     showToast('Зарядка не найдена');
                     return;
                 }
