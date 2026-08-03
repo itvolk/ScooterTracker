@@ -1234,9 +1234,10 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.1.0";
+        const APP_VERSION = "3.1.1";
         const RELEASE_NOTES = [
-            "🗑️ Добавлена возможность удаления зарядок из статистики (кнопка 🗑️ рядом с каждой зарядкой)",
+            "🔧 Исправлено удаление зарядок — теперь корректно восстанавливается состояние заряда и пробега с последней зарядки",
+            "🗑️ Добавлена возможность удаления зарядок из статистики",
             "🔧 Исправлено отображение количества поездок в статистике",
             "🛵 Поддержка нескольких скутеров",
             "➕ Добавление, переименование, удаление скутеров",
@@ -1319,6 +1320,9 @@
                                 if (s.data.chargeLog) {
                                     s.data.chargeLog = s.data.chargeLog.map(c => {
                                         ensureChargeId(c);
+                                        // Миграция: если нет prev полей, добавляем их со значениями по умолчанию (null)
+                                        if (c.prevOdometer === undefined) c.prevOdometer = null;
+                                        if (c.prevPercent === undefined) c.prevPercent = null;
                                         return c;
                                     });
                                 }
@@ -1339,6 +1343,8 @@
                         if (oldData.chargeLog) {
                             oldData.chargeLog = oldData.chargeLog.map(c => {
                                 ensureChargeId(c);
+                                if (c.prevOdometer === undefined) c.prevOdometer = null;
+                                if (c.prevPercent === undefined) c.prevPercent = null;
                                 return c;
                             });
                         }
@@ -1704,7 +1710,7 @@
                     showToast('Ошибка статистики'); }
             }
 
-            // ---- УДАЛЕНИЕ ЗАРЯДКИ ----
+            // ---- УДАЛЕНИЕ ЗАРЯДКИ (с восстановлением состояния) ----
             function deleteCharge(id) {
                 if (!confirm('Удалить эту зарядку из истории?')) return;
                 const data = loadActiveScooterData();
@@ -1714,6 +1720,13 @@
                     showToast('Зарядка не найдена');
                     return;
                 }
+                const charge = data.chargeLog[index];
+                // Если есть prev данные, восстанавливаем состояние
+                if (charge.prevOdometer !== null && charge.prevPercent !== null) {
+                    data.chargeOdometer = charge.prevOdometer;
+                    data.chargePercent = charge.prevPercent;
+                }
+                // Удаляем запись
                 data.chargeLog.splice(index, 1);
                 saveActiveScooterData(data);
                 renderAll();
@@ -2091,6 +2104,11 @@
                 const modeInfo = getChargeModeAndTime(data);
                 const cost = calcChargeCost(data, addPercent, tariffType, manualPrice, modeInfo.mode);
                 const chargeId = 'charge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+                // Сохраняем предыдущее состояние для возможности отката
+                const prevOdometer = data.chargeOdometer;
+                const prevPercent = data.chargePercent;
+
                 data.chargeLog.push({
                     id: chargeId,
                     date: Date.now(),
@@ -2099,7 +2117,9 @@
                     tariffType: tariffType,
                     pricePerKwh: tariffType === 'other' ? manualPrice : (tariffType === 'free' ? 0 : getTariffPrice(data, tariffType)),
                     cost: cost,
-                    chargeMode: modeInfo.mode
+                    chargeMode: modeInfo.mode,
+                    prevOdometer: prevOdometer,
+                    prevPercent: prevPercent
                 });
                 data.chargePercent = newPercent;
                 data.chargeOdometer = data.totalTrips;
@@ -2283,7 +2303,9 @@
                                     tariffType: tariff,
                                     pricePerKwh: isNaN(price) ? null : price,
                                     cost: isNaN(cost) ? null : cost,
-                                    chargeMode: 'normal'
+                                    chargeMode: 'normal',
+                                    prevOdometer: null,
+                                    prevPercent: null
                                 });
                             } else if (type === 'Расход' && !isNaN(parseFloat(parts[9]?.trim()))) {
                                 const amount = parseFloat(parts[9].trim());
@@ -2328,6 +2350,8 @@
                         data.chargeLog = json.chargeLog || [];
                         data.chargeLog = data.chargeLog.map(c => {
                             ensureChargeId(c);
+                            if (c.prevOdometer === undefined) c.prevOdometer = null;
+                            if (c.prevPercent === undefined) c.prevPercent = null;
                             return c;
                         });
                         data.expenses = json.expenses || [];
