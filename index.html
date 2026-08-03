@@ -1206,7 +1206,6 @@
 
             <hr style="border-color:var(--border); margin:16px 0;">
 
-            <!-- НОВЫЙ БЛОК: ручная корректировка пробега с последней зарядки -->
             <div class="settings-group">
                 <label for="sinceChargeManual">🔧 Пробег с последней зарядки (км) — ручная корректировка</label>
                 <div class="input-row">
@@ -1251,8 +1250,9 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.1.2";
+        const APP_VERSION = "3.1.3";
         const RELEASE_NOTES = [
+            "📱 Добавлена поддержка офлайн-режима (Service Worker)",
             "🔧 Добавлена автоматическая корректировка отрицательного пробега с последней зарядки (обнуляется)",
             "🛠 Добавлена ручная установка пробега с последней зарядки в настройках",
             "🗑️ Исправлено удаление зарядок — теперь сохраняется предыдущее состояние",
@@ -1295,6 +1295,13 @@
 
         // ======================== ОСНОВНОЙ КОД ========================
         try {
+            // ---- РЕГИСТРАЦИЯ SERVICE WORKER ----
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('Service Worker зарегистрирован', reg))
+                    .catch(err => console.warn('SW регистрация не удалась:', err));
+            }
+
             const STORAGE_KEY = 'scooter_tracker_data_v3';
 
             function defaultScooterData() {
@@ -1369,7 +1376,6 @@
                                 return c;
                             });
                         }
-                        // Автокоррекция
                         if (oldData.chargeOdometer > oldData.totalTrips) {
                             oldData.chargeOdometer = oldData.totalTrips;
                         }
@@ -1442,7 +1448,6 @@
 
             function calcBattery(data) {
                 const total = calcTotal(data.trips);
-                // Убедимся, что chargeOdometer не больше totalTrips
                 const odometer = Math.min(data.chargeOdometer, data.totalTrips);
                 const driven = data.totalTrips - odometer;
                 const effective = data.fullRange * (data.chargePercent / 100);
@@ -1509,7 +1514,6 @@
             // ---- Рендеринг ----
             function renderMain(data) {
                 if (!data) return;
-                // Принудительная корректировка перед отображением
                 if (data.chargeOdometer > data.totalTrips) {
                     data.chargeOdometer = data.totalTrips;
                     saveActiveScooterData(data);
@@ -1928,7 +1932,6 @@
                     const el = document.getElementById(id);
                     if (el) el.value = data[fields[id]] !== undefined ? data[fields[id]] : '';
                 });
-                // Отображаем текущее значение пробега с последней зарядки в поле ручной корректировки
                 const sinceChargeManual = document.getElementById('sinceChargeManual');
                 if (sinceChargeManual) {
                     const driven = data.totalTrips - data.chargeOdometer;
@@ -1949,7 +1952,6 @@
                     showToast('Введите неотрицательное число');
                     return;
                 }
-                // Устанавливаем chargeOdometer так, чтобы пробег с зарядки был равен value
                 const newOdometer = data.totalTrips - value;
                 if (newOdometer < 0) {
                     showToast('Пробег с зарядки не может быть больше общего пробега');
