@@ -1203,15 +1203,32 @@
                 <label for="toIntervalSetting">Интервал ТО (км)</label>
                 <input type="number" id="toIntervalSetting" step="10" min="10" placeholder="Напр. 500">
             </div>
+
             <hr style="border-color:var(--border); margin:16px 0;">
+
+            <!-- НОВЫЙ БЛОК: ручная корректировка пробега с последней зарядки -->
+            <div class="settings-group">
+                <label for="sinceChargeManual">🔧 Пробег с последней зарядки (км) — ручная корректировка</label>
+                <div class="input-row">
+                    <input type="number" id="sinceChargeManual" step="0.1" min="0" placeholder="0.0">
+                    <button class="btn btn-outline" id="setSinceChargeBtn">Применить</button>
+                </div>
+                <div class="hint">Введите реальное значение пробега с последней зарядки. Отрицательные значения автоматически обнуляются.</div>
+            </div>
+
+            <hr style="border-color:var(--border); margin:16px 0;">
+
             <div class="settings-group">
                 <label>🔧 Корректировка одометра (км, +/-)</label>
                 <div class="input-row">
                     <input type="number" id="correctionInput" placeholder="Напр. -5.2" step="0.1">
                     <button class="btn btn-outline" id="correctionBtn">Применить</button>
                 </div>
+                <div class="hint">Влияет только на общий пробег, не меняет пробег с зарядки и остаток хода</div>
             </div>
+
             <hr style="border-color:var(--border); margin:16px 0;">
+
             <div class="settings-group">
                 <label for="notesInput">📝 Заметки (на память)</label>
                 <textarea id="notesInput" placeholder="Дата замены колодок, номер мастера..."></textarea>
@@ -1234,10 +1251,11 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.1.1";
+        const APP_VERSION = "3.1.2";
         const RELEASE_NOTES = [
-            "🔧 Исправлено удаление зарядок — теперь корректно восстанавливается состояние заряда и пробега с последней зарядки",
-            "🗑️ Добавлена возможность удаления зарядок из статистики",
+            "🔧 Добавлена автоматическая корректировка отрицательного пробега с последней зарядки (обнуляется)",
+            "🛠 Добавлена ручная установка пробега с последней зарядки в настройках",
+            "🗑️ Исправлено удаление зарядок — теперь сохраняется предыдущее состояние",
             "🔧 Исправлено отображение количества поездок в статистике",
             "🛵 Поддержка нескольких скутеров",
             "➕ Добавление, переименование, удаление скутеров",
@@ -1320,11 +1338,14 @@
                                 if (s.data.chargeLog) {
                                     s.data.chargeLog = s.data.chargeLog.map(c => {
                                         ensureChargeId(c);
-                                        // Миграция: если нет prev полей, добавляем их со значениями по умолчанию (null)
                                         if (c.prevOdometer === undefined) c.prevOdometer = null;
                                         if (c.prevPercent === undefined) c.prevPercent = null;
                                         return c;
                                     });
+                                }
+                                // АВТОМАТИЧЕСКАЯ КОРРЕКТИРОВКА отрицательного пробега с последней зарядки
+                                if (s.data.chargeOdometer > s.data.totalTrips) {
+                                    s.data.chargeOdometer = s.data.totalTrips;
                                 }
                                 return s;
                             });
@@ -1347,6 +1368,10 @@
                                 if (c.prevPercent === undefined) c.prevPercent = null;
                                 return c;
                             });
+                        }
+                        // Автокоррекция
+                        if (oldData.chargeOdometer > oldData.totalTrips) {
+                            oldData.chargeOdometer = oldData.totalTrips;
                         }
                         const newStore = {
                             scooters: [{
@@ -1417,7 +1442,9 @@
 
             function calcBattery(data) {
                 const total = calcTotal(data.trips);
-                const driven = data.totalTrips - data.chargeOdometer;
+                // Убедимся, что chargeOdometer не больше totalTrips
+                const odometer = Math.min(data.chargeOdometer, data.totalTrips);
+                const driven = data.totalTrips - odometer;
                 const effective = data.fullRange * (data.chargePercent / 100);
                 const remain = Math.max(0, effective - driven);
                 const percent = data.fullRange > 0 ? Math.min(100, Math.max(0, (remain / data.fullRange) * 100)) : 0;
@@ -1482,6 +1509,11 @@
             // ---- Рендеринг ----
             function renderMain(data) {
                 if (!data) return;
+                // Принудительная корректировка перед отображением
+                if (data.chargeOdometer > data.totalTrips) {
+                    data.chargeOdometer = data.totalTrips;
+                    saveActiveScooterData(data);
+                }
                 const total = calcTotal(data.trips);
                 const battery = calcBattery(data);
                 const last = data.trips.length > 0 ? data.trips[data.trips.length - 1] : null;
@@ -1545,7 +1577,7 @@
                 document.getElementById('chargeAddInfo').textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
             }
 
-            // ---- СТАТИСТИКА (с удалением) ----
+            // ---- СТАТИСТИКА ----
             function renderStats(data) {
                 if (!data) return;
                 try {
@@ -1710,7 +1742,7 @@
                     showToast('Ошибка статистики'); }
             }
 
-            // ---- УДАЛЕНИЕ ЗАРЯДКИ (с восстановлением состояния) ----
+            // ---- УДАЛЕНИЕ ЗАРЯДКИ ----
             function deleteCharge(id) {
                 if (!confirm('Удалить эту зарядку из истории?')) return;
                 const data = loadActiveScooterData();
@@ -1721,12 +1753,10 @@
                     return;
                 }
                 const charge = data.chargeLog[index];
-                // Если есть prev данные, восстанавливаем состояние
                 if (charge.prevOdometer !== null && charge.prevPercent !== null) {
                     data.chargeOdometer = charge.prevOdometer;
                     data.chargePercent = charge.prevPercent;
                 }
-                // Удаляем запись
                 data.chargeLog.splice(index, 1);
                 saveActiveScooterData(data);
                 renderAll();
@@ -1898,11 +1928,37 @@
                     const el = document.getElementById(id);
                     if (el) el.value = data[fields[id]] !== undefined ? data[fields[id]] : '';
                 });
+                // Отображаем текущее значение пробега с последней зарядки в поле ручной корректировки
+                const sinceChargeManual = document.getElementById('sinceChargeManual');
+                if (sinceChargeManual) {
+                    const driven = data.totalTrips - data.chargeOdometer;
+                    sinceChargeManual.value = driven >= 0 ? driven.toFixed(1) : '0.0';
+                }
                 const store = loadAllScooters();
                 const activeId = getActiveScooterId(store);
                 const scooter = store.scooters.find(s => s.id === activeId);
                 const nameEl = document.getElementById('settingsScooterName');
                 if (nameEl && scooter) nameEl.textContent = '🛵 ' + scooter.name;
+            }
+
+            // ---- Ручная установка пробега с последней зарядки ----
+            function setSinceChargeManually(value) {
+                const data = loadActiveScooterData();
+                if (!data) return;
+                if (isNaN(value) || value < 0) {
+                    showToast('Введите неотрицательное число');
+                    return;
+                }
+                // Устанавливаем chargeOdometer так, чтобы пробег с зарядки был равен value
+                const newOdometer = data.totalTrips - value;
+                if (newOdometer < 0) {
+                    showToast('Пробег с зарядки не может быть больше общего пробега');
+                    return;
+                }
+                data.chargeOdometer = newOdometer;
+                saveActiveScooterData(data);
+                renderAll();
+                showToast(`✅ Пробег с последней зарядки установлен: ${value.toFixed(1)} км`);
             }
 
             function renderScootersList() {
@@ -2105,7 +2161,6 @@
                 const cost = calcChargeCost(data, addPercent, tariffType, manualPrice, modeInfo.mode);
                 const chargeId = 'charge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 
-                // Сохраняем предыдущее состояние для возможности отката
                 const prevOdometer = data.chargeOdometer;
                 const prevPercent = data.chargePercent;
 
@@ -2538,6 +2593,16 @@
                             if (isNaN(val)) val = 0;
                             saveSetting(field, val, allowZero);
                         });
+                    });
+
+                    // Ручная установка пробега с последней зарядки
+                    document.getElementById('setSinceChargeBtn').addEventListener('click', function() {
+                        const val = parseFloat(document.getElementById('sinceChargeManual').value);
+                        if (!isNaN(val)) setSinceChargeManually(val);
+                        else showToast('Введите число');
+                    });
+                    document.getElementById('sinceChargeManual').addEventListener('keydown', e => {
+                        if (e.key === 'Enter') document.getElementById('setSinceChargeBtn').click();
                     });
 
                     document.getElementById('correctionBtn').addEventListener('click', function() {
