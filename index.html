@@ -1234,9 +1234,10 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.0.9";
+        const APP_VERSION = "3.1.0";
         const RELEASE_NOTES = [
-            "🔧 Исправлено отображение количества поездок в статистике (теперь показывает реальное число поездок, а не количество дней)",
+            "🗑️ Добавлена возможность удаления зарядок из статистики (кнопка 🗑️ рядом с каждой зарядкой)",
+            "🔧 Исправлено отображение количества поездок в статистике",
             "🛵 Поддержка нескольких скутеров",
             "➕ Добавление, переименование, удаление скутеров",
             "📊 Статистика и расходы привязаны к активному скутеру",
@@ -1538,7 +1539,7 @@
                 document.getElementById('chargeAddInfo').textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
             }
 
-            // ---- СТАТИСТИКА (исправлен счётчик поездок) ----
+            // ---- СТАТИСТИКА (с удалением) ----
             function renderStats(data) {
                 if (!data) return;
                 try {
@@ -1577,7 +1578,6 @@
                         tripEntries = tripEntries.filter(t => new Date(t.date).toISOString().slice(0, 10) >= cutoffStr);
                     }
 
-                    // Общее количество поездок за период
                     const tripCount = tripEntries.length;
 
                     const dayMap = new Map();
@@ -1599,7 +1599,7 @@
 
                     document.getElementById('statTotal').textContent = sum.toFixed(1);
                     document.getElementById('statAvg').textContent = avg.toFixed(1);
-                    document.getElementById('statCount').textContent = tripCount; // теперь количество поездок
+                    document.getElementById('statCount').textContent = tripCount;
                     document.getElementById('statMax').textContent = max.toFixed(1);
 
                     const detailDiv = document.getElementById('statsDetail');
@@ -1668,7 +1668,10 @@
                             html += `<div class="stat-item" data-charge-id="${chargeId}">
                                 <span class="date">${dateStr} ${tariffLabel}</span>
                                 <span class="dist">+${c.addedPercent}% → ${c.newPercent}%${costStr}</span>
-                                <span class="actions"><button class="edit-charge-btn" data-id="${chargeId}" title="Редактировать тариф">✏️</button></span>
+                                <span class="actions">
+                                    <button class="edit-charge-btn" data-id="${chargeId}" title="Редактировать тариф">✏️</button>
+                                    <button class="delete-charge-btn" data-id="${chargeId}" title="Удалить зарядку">🗑️</button>
+                                </span>
                             </div>`;
                         });
                         chargeDetailDiv.innerHTML = html;
@@ -1677,6 +1680,13 @@
                                 e.stopPropagation();
                                 const id = this.dataset.id;
                                 openEditChargeModal(id);
+                            });
+                        });
+                        chargeDetailDiv.querySelectorAll('.delete-charge-btn').forEach(btn => {
+                            btn.addEventListener('click', function(e) {
+                                e.stopPropagation();
+                                const id = this.dataset.id;
+                                deleteCharge(id);
                             });
                         });
                         saveActiveScooterData(data);
@@ -1694,6 +1704,23 @@
                     showToast('Ошибка статистики'); }
             }
 
+            // ---- УДАЛЕНИЕ ЗАРЯДКИ ----
+            function deleteCharge(id) {
+                if (!confirm('Удалить эту зарядку из истории?')) return;
+                const data = loadActiveScooterData();
+                if (!data) return;
+                const index = data.chargeLog.findIndex(c => c.id === id);
+                if (index === -1) {
+                    showToast('Зарядка не найдена');
+                    return;
+                }
+                data.chargeLog.splice(index, 1);
+                saveActiveScooterData(data);
+                renderAll();
+                showToast('🗑️ Зарядка удалена');
+            }
+
+            // ---- РАСХОДЫ ----
             function renderExpenses(data) {
                 if (!data) return;
                 const expenses = data.expenses || [];
