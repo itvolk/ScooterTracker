@@ -1,15 +1,12 @@
 // sw.js — Service Worker для офлайн-доступа
-// Версия: v5 — с абсолютными путями относительно корня сайта
+const CACHE_NAME = 'scooter-tracker-v6';
 
-const CACHE_NAME = 'scooter-tracker-v5';
-const BASE_PATH = '/ScooterTracker/'; // <- ваш репозиторий
-
-// Все файлы, которые должны быть доступны офлайн
+// Пути относительно корня сайта
 const URLS_TO_CACHE = [
-    BASE_PATH,
-    BASE_PATH + 'index.html',
-    BASE_PATH + 'manifest.json',
-    BASE_PATH + 'sw.js'
+    '/ScooterTracker/',
+    '/ScooterTracker/index.html',
+    '/ScooterTracker/sw.js'
+    // '/ScooterTracker/manifest.json' — раскомментируйте, когда создадите файл
 ];
 
 // Установка
@@ -17,17 +14,36 @@ self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('Кеш открыт, кешируем:', URLS_TO_CACHE);
+                console.log('Кеш открыт');
                 return cache.addAll(URLS_TO_CACHE);
             })
             .then(() => {
                 console.log('Кеширование завершено');
-                self.skipWaiting(); // сразу активируем
+                self.skipWaiting();
             })
             .catch(err => {
                 console.error('Ошибка кеширования:', err);
-                // Если один файл не закешировался, пробуем остальные
-                // но лучше исправить пути
+                // Пробуем кешировать по одному
+                event.waitUntil(
+                    caches.open(CACHE_NAME).then(cache => {
+                        return Promise.all(
+                            URLS_TO_CACHE.map(url => {
+                                return fetch(url)
+                                    .then(response => {
+                                        if (response.ok) {
+                                            cache.put(url, response);
+                                            console.log('Кешировано:', url);
+                                        } else {
+                                            console.warn('Не удалось кешировать:', url, response.status);
+                                        }
+                                    })
+                                    .catch(err => {
+                                        console.warn('Ошибка при кешировании:', url, err);
+                                    });
+                            })
+                        );
+                    })
+                );
             })
     );
 });
@@ -58,13 +74,10 @@ self.addEventListener('fetch', event => {
         caches.match(event.request)
             .then(response => {
                 if (response) {
-                    // Если есть в кеше — возвращаем
                     return response;
                 }
-                // Иначе идём в сеть
                 return fetch(event.request)
                     .then(networkResponse => {
-                        // Кешируем успешные ответы
                         if (networkResponse && networkResponse.status === 200) {
                             const clone = networkResponse.clone();
                             caches.open(CACHE_NAME).then(cache => {
@@ -74,7 +87,6 @@ self.addEventListener('fetch', event => {
                         return networkResponse;
                     })
                     .catch(() => {
-                        // Если сеть недоступна и нет кеша — показываем ошибку
                         console.warn('Нет доступа к ресурсу:', event.request.url);
                         return new Response('Офлайн-режим: ресурс недоступен', {
                             status: 503,
