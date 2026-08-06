@@ -1963,7 +1963,7 @@
                 if (nameEl && scooter) nameEl.textContent = '🛵 ' + scooter.name;
             }
 
-            // ---- ЭКСПОРТ через Web Share ----
+            // ---- ЭКСПОРТ через Web Share с fallback на скачивание ----
             function exportScooterData(scooterId) {
                 const store = loadAllScooters();
                 const scooter = store.scooters.find(s => s.id === scooterId);
@@ -1981,9 +1981,16 @@
                 };
                 const json = JSON.stringify(exportData, null, 2);
                 const blob = new Blob([json], { type: 'application/json' });
-                const file = new File([blob], `scooter_${scooter.name.replace(/\s/g, '_')}_${Date.now()}.json`, { type: 'application/json' });
+                const fileName = `scooter_${scooter.name.replace(/\s/g, '_')}_${Date.now()}.json`;
+                const file = new File([blob], fileName, { type: 'application/json' });
 
-                // Пробуем Share API
+                // Функция-запасной вариант — скачать файл
+                function fallbackDownload() {
+                    downloadFile(json, fileName, 'application/json');
+                    showToast('📤 Файл сохранён локально');
+                }
+
+                // Проверяем поддержку Web Share API для файлов
                 if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                     navigator.share({
                         title: `Данные скутера ${scooter.name}`,
@@ -1995,16 +2002,13 @@
                         if (err.name === 'AbortError') {
                             showToast('Отправка отменена');
                         } else {
-                            console.error('Ошибка отправки:', err);
-                            // Если Share не сработал, предлагаем скачать
-                            downloadFile(json, file.name, 'application/json');
-                            showToast('📤 Файл сохранён локально');
+                            console.warn('Web Share не сработал, скачиваем файл:', err);
+                            fallbackDownload();
                         }
                     });
                 } else {
-                    // Если Share API не поддерживается — скачиваем
-                    downloadFile(json, file.name, 'application/json');
-                    showToast('📤 Файл сохранён локально');
+                    // Если API не поддерживается — скачиваем
+                    fallbackDownload();
                 }
             }
 
