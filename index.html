@@ -199,6 +199,19 @@
         .scooter-item .scooter-actions .delete-btn:hover {
             color: var(--btn-danger);
         }
+        /* НОВЫЕ кнопки экспорта/импорта */
+        .scooter-actions .share-btn,
+        .scooter-actions .import-btn {
+            font-size: 18px;
+        }
+        .scooter-actions .share-btn:hover,
+        .scooter-actions .import-btn:hover {
+            background: var(--border);
+        }
+        /* Импорт-файл скрыт */
+        .hidden-input {
+            display: none;
+        }
 
         .stat-grid {
             display: grid;
@@ -686,9 +699,6 @@
         .modal .btn-outline {
             margin-top: 8px;
         }
-        .hidden-input {
-            display: none;
-        }
         .settings-section-title {
             font-size: 16px;
             font-weight: 700;
@@ -1154,6 +1164,8 @@
             </div>
             <div id="scooterListContainer"><div class="empty">Загрузка...</div></div>
         </div>
+        <!-- Скрытый инпут для импорта файла -->
+        <input type="file" id="importFileInput" class="hidden-input" accept=".json,.csv">
     </div>
 
     <!-- ======== НАСТРОЙКИ ======== -->
@@ -1250,15 +1262,16 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.1.4";
+        const APP_VERSION = "3.1.5";
         const RELEASE_NOTES = [
+            "📤 Добавлена кнопка «Отправить» — экспорт данных скутера в JSON с отправкой через системный диалог (Web Share)",
+            "📥 Добавлена кнопка «Загрузить» — импорт данных скутера из JSON или CSV с выбором «Заменить» или «Добавить»",
             "📊 Сохранение выбранного периода в статистике (по умолчанию «Всё время»)",
             "📱 Добавлена поддержка офлайн-режима (Service Worker)",
             "🔧 Добавлена автоматическая корректировка отрицательного пробега с последней зарядки",
             "🛠 Добавлена ручная установка пробега с последней зарядки в настройках",
             "🗑️ Исправлено удаление зарядок — теперь сохраняется предыдущее состояние",
             "🛵 Поддержка нескольких скутеров",
-            "📊 Статистика и расходы привязаны к активному скутеру",
             "👉 Навигация свайпами между вкладками"
         ];
 
@@ -1580,17 +1593,15 @@
                 document.getElementById('chargeAddInfo').textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
             }
 
-            // ---- СТАТИСТИКА (с сохранением периода) ----
+            // ---- СТАТИСТИКА ----
             function renderStats(data) {
                 if (!data) return;
                 try {
-                    // Получаем сохранённый период или 'all' по умолчанию
                     const savedPeriod = localStorage.getItem(STATS_PERIOD_STORAGE_KEY) || 'all';
                     const periodSelect = document.getElementById('periodSelect');
                     if (periodSelect && periodSelect.value !== savedPeriod) {
                         periodSelect.value = savedPeriod;
                     }
-                    // Обновляем видимость кастомных селектов
                     updateDateSelectsVisibility();
 
                     const period = savedPeriod;
@@ -1952,6 +1963,249 @@
                 if (nameEl && scooter) nameEl.textContent = '🛵 ' + scooter.name;
             }
 
+            // ---- ЭКСПОРТ через Web Share ----
+            function exportScooterData(scooterId) {
+                const store = loadAllScooters();
+                const scooter = store.scooters.find(s => s.id === scooterId);
+                if (!scooter) {
+                    showToast('Скутер не найден');
+                    return;
+                }
+                // Собираем данные для экспорта
+                const exportData = {
+                    version: '1.0',
+                    exportedAt: new Date().toISOString(),
+                    scooterId: scooter.id,
+                    name: scooter.name,
+                    data: scooter.data
+                };
+                const json = JSON.stringify(exportData, null, 2);
+                const blob = new Blob([json], { type: 'application/json' });
+                const file = new File([blob], `scooter_${scooter.name.replace(/\s/g, '_')}_${Date.now()}.json`, { type: 'application/json' });
+
+                // Пробуем Share API
+                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                    navigator.share({
+                        title: `Данные скутера ${scooter.name}`,
+                        text: `Экспорт данных скутера ${scooter.name} от ${new Date().toLocaleDateString()}`,
+                        files: [file]
+                    }).then(() => {
+                        showToast('📤 Данные отправлены');
+                    }).catch(err => {
+                        if (err.name === 'AbortError') {
+                            showToast('Отправка отменена');
+                        } else {
+                            console.error('Ошибка отправки:', err);
+                            // Если Share не сработал, предлагаем скачать
+                            downloadFile(json, file.name, 'application/json');
+                            showToast('📤 Файл сохранён локально');
+                        }
+                    });
+                } else {
+                    // Если Share API не поддерживается — скачиваем
+                    downloadFile(json, file.name, 'application/json');
+                    showToast('📤 Файл сохранён локально');
+                }
+            }
+
+            function downloadFile(content, filename, mime) {
+                const blob = new Blob([content], { type: mime + ';charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }
+
+            // ---- ИМПОРТ через выбор файла ----
+            function importScooterData(scooterId) {
+                const input = document.getElementById('importFileInput');
+                if (!input) return;
+                // Сохраняем ID скутера для импорта
+                input.dataset.targetScooterId = scooterId;
+                input.click();
+            }
+
+            function handleImportFile(file, targetScooterId) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const text = e.target.result;
+                        let importData;
+                        // Пробуем парсить как JSON
+                        try {
+                            importData = JSON.parse(text);
+                        } catch (jsonError) {
+                            // Если не JSON, пробуем CSV
+                            try {
+                                importData = parseCSV(text);
+                            } catch (csvError) {
+                                showToast('Не удалось распарсить файл. Поддерживаются JSON и CSV.');
+                                return;
+                            }
+                        }
+
+                        // Проверяем структуру
+                        if (!importData.data && !importData.trips) {
+                            // Пробуем определить: может быть экспорт из приложения или сырые данные
+                            if (importData.version && importData.scooterId && importData.data) {
+                                // Это экспорт из нашего приложения
+                                importData = importData.data;
+                            } else if (Array.isArray(importData)) {
+                                // Может быть массив поездок (старый формат)
+                                importData = { trips: importData };
+                            } else {
+                                // Просто объект — используем как есть
+                            }
+                        }
+
+                        // Приводим к стандартному виду
+                        const newData = {
+                            fullRange: importData.fullRange || 60,
+                            batteryCapacity: importData.batteryCapacity || 1.0,
+                            chargeEfficiencyNormal: importData.chargeEfficiencyNormal || 0.9,
+                            chargeEfficiencyFast: importData.chargeEfficiencyFast || 0.85,
+                            tariffNight: importData.tariffNight || 4.5,
+                            tariffDay: importData.tariffDay || 6.8,
+                            chargeHoursNormal: importData.chargeHoursNormal || 4.0,
+                            chargeHoursFast: importData.chargeHoursFast || 0,
+                            chargeMode: importData.chargeMode || 'normal',
+                            chargeOdometer: importData.chargeOdometer || 0,
+                            chargePercent: importData.chargePercent || 100,
+                            trips: importData.trips || [],
+                            totalTrips: importData.totalTrips || 0,
+                            toInterval: importData.toInterval || 500,
+                            lastToNotified: importData.lastToNotified || 0,
+                            notes: importData.notes || '',
+                            chargeLog: importData.chargeLog || [],
+                            expenses: importData.expenses || []
+                        };
+
+                        // Спрашиваем пользователя, как импортировать
+                        const action = confirm('Заменить текущие данные скутера на импортированные?\nНажмите "ОК" — заменить.\n"Отмена" — добавить новые записи.');
+
+                        const store = loadAllScooters();
+                        const targetScooter = store.scooters.find(s => s.id === targetScooterId);
+                        if (!targetScooter) {
+                            showToast('Скутер не найден');
+                            return;
+                        }
+
+                        if (action) {
+                            // Заменить всё
+                            targetScooter.data = newData;
+                            // Обновляем totalTrips
+                            targetScooter.data.totalTrips = targetScooter.data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
+                            saveStore(store);
+                            renderAll();
+                            showToast('✅ Данные успешно заменены');
+                        } else {
+                            // Добавить новые записи
+                            const existingTrips = targetScooter.data.trips || [];
+                            const existingChargeLog = targetScooter.data.chargeLog || [];
+                            const existingExpenses = targetScooter.data.expenses || [];
+
+                            // Добавляем поездки с новыми ID
+                            const newTrips = (newData.trips || []).map(t => ({
+                                ...t,
+                                id: 'trip_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+                            }));
+                            // Добавляем зарядки с новыми ID
+                            const newChargeLog = (newData.chargeLog || []).map(c => ({
+                                ...c,
+                                id: 'charge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                                prevOdometer: null,
+                                prevPercent: null
+                            }));
+                            // Добавляем расходы с новыми ID
+                            const newExpenses = (newData.expenses || []).map(e => ({
+                                ...e,
+                                id: 'exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
+                            }));
+
+                            targetScooter.data.trips = existingTrips.concat(newTrips);
+                            targetScooter.data.chargeLog = existingChargeLog.concat(newChargeLog);
+                            targetScooter.data.expenses = existingExpenses.concat(newExpenses);
+                            targetScooter.data.totalTrips = targetScooter.data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
+
+                            // Обновляем настройки только если они не заданы
+                            if (!targetScooter.data.fullRange && newData.fullRange) targetScooter.data.fullRange = newData.fullRange;
+                            if (!targetScooter.data.batteryCapacity && newData.batteryCapacity) targetScooter.data.batteryCapacity = newData.batteryCapacity;
+                            if (!targetScooter.data.chargeEfficiencyNormal && newData.chargeEfficiencyNormal) targetScooter.data.chargeEfficiencyNormal = newData.chargeEfficiencyNormal;
+                            if (!targetScooter.data.chargeEfficiencyFast && newData.chargeEfficiencyFast) targetScooter.data.chargeEfficiencyFast = newData.chargeEfficiencyFast;
+                            if (!targetScooter.data.tariffNight && newData.tariffNight) targetScooter.data.tariffNight = newData.tariffNight;
+                            if (!targetScooter.data.tariffDay && newData.tariffDay) targetScooter.data.tariffDay = newData.tariffDay;
+                            if (!targetScooter.data.chargeHoursNormal && newData.chargeHoursNormal) targetScooter.data.chargeHoursNormal = newData.chargeHoursNormal;
+                            if (!targetScooter.data.chargeHoursFast && newData.chargeHoursFast) targetScooter.data.chargeHoursFast = newData.chargeHoursFast;
+                            if (!targetScooter.data.toInterval && newData.toInterval) targetScooter.data.toInterval = newData.toInterval;
+                            if (!targetScooter.data.notes && newData.notes) targetScooter.data.notes = newData.notes;
+
+                            saveStore(store);
+                            renderAll();
+                            showToast(`✅ Добавлено: ${newTrips.length} поездок, ${newChargeLog.length} зарядок, ${newExpenses.length} расходов`);
+                        }
+                    } catch (err) {
+                        console.error('Ошибка импорта:', err);
+                        showToast('Ошибка при импорте данных');
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            // ---- Парсинг CSV ----
+            function parseCSV(text) {
+                const lines = text.split('\n').filter(line => line.trim() !== '');
+                if (lines.length < 2) throw new Error('Пустой CSV');
+                const headers = lines[0].split(',').map(h => h.trim());
+                const result = { trips: [], chargeLog: [], expenses: [] };
+                let tripsIndex = -1,
+                    chargeIndex = -1,
+                    expenseIndex = -1;
+                // Определяем тип данных по заголовкам
+                if (headers.some(h => h.includes('Расстояние') || h.includes('км'))) {
+                    // CSV с поездками
+                    for (let i = 1; i < lines.length; i++) {
+                        const parts = lines[i].split(',').map(p => p.trim());
+                        if (parts.length < 3) continue;
+                        const date = new Date(parts[0]);
+                        if (isNaN(date.getTime())) continue;
+                        const type = parts[1]?.toLowerCase() || '';
+                        const dist = parseFloat(parts[2]);
+                        if (isNaN(dist)) continue;
+                        if (type.includes('заряд') || type === 'зарядка') {
+                            // Зарядка
+                            const added = parseFloat(parts[3]) || 0;
+                            const newP = parseFloat(parts[4]) || 0;
+                            result.chargeLog.push({
+                                date: date.getTime(),
+                                addedPercent: added,
+                                newPercent: newP,
+                                tariffType: 'night',
+                                pricePerKwh: null,
+                                cost: null,
+                                chargeMode: 'normal'
+                            });
+                        } else {
+                            // Поездка или коррекция
+                            const ttype = type.includes('коррек') ? 'correction' : 'trip';
+                            result.trips.push({
+                                date: date.getTime(),
+                                distance: dist,
+                                type: ttype
+                            });
+                            if (ttype === 'trip') {
+                                result.totalTrips = (result.totalTrips || 0) + dist;
+                            }
+                        }
+                    }
+                } else {
+                    throw new Error('Неизвестный формат CSV');
+                }
+                return result;
+            }
+
             // ---- Ручная установка пробега с последней зарядки ----
             function setSinceChargeManually(value) {
                 const data = loadActiveScooterData();
@@ -1993,6 +2247,8 @@
                             </div>
                             <div class="scooter-actions">
                                 ${!isActive ? `<button class="select-btn" data-id="${s.id}" title="Выбрать">✅</button>` : ''}
+                                <button class="share-btn" data-id="${s.id}" title="Отправить данные скутера">📤</button>
+                                <button class="import-btn" data-id="${s.id}" title="Загрузить данные из файла">📥</button>
                                 <button class="rename-btn" data-id="${s.id}" title="Переименовать">✏️</button>
                                 <button class="delete-btn" data-id="${s.id}" title="Удалить">🗑️</button>
                             </div>
@@ -2001,10 +2257,24 @@
                 });
                 html += '</div>';
                 container.innerHTML = html;
+
+                // Обработчики
                 container.querySelectorAll('.select-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
                         selectScooter(this.dataset.id);
+                    });
+                });
+                container.querySelectorAll('.share-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        exportScooterData(this.dataset.id);
+                    });
+                });
+                container.querySelectorAll('.import-btn').forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        importScooterData(this.dataset.id);
                     });
                 });
                 container.querySelectorAll('.rename-btn').forEach(btn => {
@@ -2026,6 +2296,19 @@
                     });
                 });
             }
+
+            // Обработчик импорта файла
+            document.getElementById('importFileInput').addEventListener('change', function(e) {
+                if (this.files && this.files[0]) {
+                    const targetId = this.dataset.targetScooterId;
+                    if (targetId) {
+                        handleImportFile(this.files[0], targetId);
+                    } else {
+                        showToast('Не выбран скутер для импорта');
+                    }
+                }
+                this.value = '';
+            });
 
             function selectScooter(id) {
                 const store = loadAllScooters();
@@ -2282,6 +2565,7 @@
                 showToast(`Настройка сохранена`);
             }
 
+            // ---- Экспорт/Импорт (старые кнопки из настроек, оставляем для совместимости) ----
             function exportCSV() {
                 const data = loadActiveScooterData();
                 if (!data) return;
@@ -2319,17 +2603,6 @@
                 const json = JSON.stringify(data, null, 2);
                 downloadFile(json, 'scooter_data.json', 'application/json');
                 showToast('📄 JSON экспортирован');
-            }
-
-            function downloadFile(content, filename, mime) {
-                const blob = new Blob([content], { type: mime + ';charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
             }
 
             function importCSV(file) {
@@ -2641,7 +2914,7 @@
                         }, 1000);
                     });
 
-                    // Экспорт/Импорт
+                    // Экспорт/Импорт (старые кнопки)
                     document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
                     document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
                     document.getElementById('importCsvBtn').addEventListener('click', function() {
@@ -2667,10 +2940,9 @@
                         this.value = '';
                     });
 
-                    // Статистика — сохранение периода
+                    // Статистика
                     const periodSelect = document.getElementById('periodSelect');
                     if (periodSelect) {
-                        // Устанавливаем сохранённое значение или 'all'
                         const savedPeriod = localStorage.getItem(STATS_PERIOD_STORAGE_KEY) || 'all';
                         periodSelect.value = savedPeriod;
                         periodSelect.addEventListener('change', function() {
