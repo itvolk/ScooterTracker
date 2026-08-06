@@ -7,7 +7,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#888888">
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="/ScooterTracker/manifest.json">
     <title>Трекер электроскутера</title>
     <style>
         /* ===== БАЗОВЫЕ ПЕРЕМЕННЫЕ ===== */
@@ -1090,7 +1090,7 @@
             <div class="stats-controls">
                 <select id="periodSelect">
                     <option value="all">Всё время</option>
-                    <option value="today" selected>Сегодня</option>
+                    <option value="today">Сегодня</option>
                     <option value="week">Неделя</option>
                     <option value="month">Месяц</option>
                     <option value="year">Год</option>
@@ -1250,17 +1250,15 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.1.3";
+        const APP_VERSION = "3.1.4";
         const RELEASE_NOTES = [
+            "📊 Сохранение выбранного периода в статистике (по умолчанию «Всё время»)",
             "📱 Добавлена поддержка офлайн-режима (Service Worker)",
-            "🔧 Добавлена автоматическая корректировка отрицательного пробега с последней зарядки (обнуляется)",
+            "🔧 Добавлена автоматическая корректировка отрицательного пробега с последней зарядки",
             "🛠 Добавлена ручная установка пробега с последней зарядки в настройках",
             "🗑️ Исправлено удаление зарядок — теперь сохраняется предыдущее состояние",
-            "🔧 Исправлено отображение количества поездок в статистике",
             "🛵 Поддержка нескольких скутеров",
-            "➕ Добавление, переименование, удаление скутеров",
             "📊 Статистика и расходы привязаны к активному скутеру",
-            "📱 Адаптивный интерфейс для горизонтальной ориентации",
             "👉 Навигация свайпами между вкладками"
         ];
 
@@ -1295,15 +1293,13 @@
 
         // ======================== ОСНОВНОЙ КОД ========================
         try {
+            const STATS_PERIOD_STORAGE_KEY = 'stats_selected_period';
+
             // ---- РЕГИСТРАЦИЯ SERVICE WORKER ----
             if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.register('sw.js')
-                    .then(reg => {
-                        console.log('Service Worker зарегистрирован', reg);
-                    })
-                    .catch(err => {
-                        console.warn('SW регистрация не удалась:', err);
-                    });
+                navigator.serviceWorker.register('/ScooterTracker/sw.js')
+                    .then(reg => console.log('Service Worker зарегистрирован', reg))
+                    .catch(err => console.warn('SW регистрация не удалась:', err));
             }
 
             const STORAGE_KEY = 'scooter_tracker_data_v3';
@@ -1354,7 +1350,6 @@
                                         return c;
                                     });
                                 }
-                                // АВТОМАТИЧЕСКАЯ КОРРЕКТИРОВКА отрицательного пробега с последней зарядки
                                 if (s.data.chargeOdometer > s.data.totalTrips) {
                                     s.data.chargeOdometer = s.data.totalTrips;
                                 }
@@ -1585,11 +1580,20 @@
                 document.getElementById('chargeAddInfo').textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
             }
 
-            // ---- СТАТИСТИКА ----
+            // ---- СТАТИСТИКА (с сохранением периода) ----
             function renderStats(data) {
                 if (!data) return;
                 try {
-                    const period = document.getElementById('periodSelect')?.value || 'today';
+                    // Получаем сохранённый период или 'all' по умолчанию
+                    const savedPeriod = localStorage.getItem(STATS_PERIOD_STORAGE_KEY) || 'all';
+                    const periodSelect = document.getElementById('periodSelect');
+                    if (periodSelect && periodSelect.value !== savedPeriod) {
+                        periodSelect.value = savedPeriod;
+                    }
+                    // Обновляем видимость кастомных селектов
+                    updateDateSelectsVisibility();
+
+                    const period = savedPeriod;
                     let cutoff = new Date();
                     let customYear, customMonth, customDay;
                     if (period.startsWith('custom_')) {
@@ -2663,13 +2667,21 @@
                         this.value = '';
                     });
 
-                    // Статистика
-                    document.getElementById('periodSelect').addEventListener('change', function() {
-                        updateDateSelectsVisibility();
-                        renderStats(loadActiveScooterData());
-                    });
+                    // Статистика — сохранение периода
+                    const periodSelect = document.getElementById('periodSelect');
+                    if (periodSelect) {
+                        // Устанавливаем сохранённое значение или 'all'
+                        const savedPeriod = localStorage.getItem(STATS_PERIOD_STORAGE_KEY) || 'all';
+                        periodSelect.value = savedPeriod;
+                        periodSelect.addEventListener('change', function() {
+                            localStorage.setItem(STATS_PERIOD_STORAGE_KEY, this.value);
+                            renderStats(loadActiveScooterData());
+                        });
+                    }
+
                     document.getElementById('customApplyBtn').addEventListener('click', function() {
-                        renderStats(loadActiveScooterData());
+                        const data = loadActiveScooterData();
+                        renderStats(data);
                     });
 
                     document.getElementById('refreshExpensesBtn').addEventListener('click', function() {
@@ -2779,7 +2791,7 @@
             }
 
             function updateDateSelectsVisibility() {
-                const period = document.getElementById('periodSelect')?.value || 'today';
+                const period = document.getElementById('periodSelect')?.value || 'all';
                 const container = document.getElementById('customDateContainer');
                 const monthGroup = document.getElementById('monthGroup');
                 const dayGroup = document.getElementById('dayGroup');
