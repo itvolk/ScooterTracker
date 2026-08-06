@@ -1,29 +1,38 @@
 // sw.js — Service Worker для офлайн-доступа
+// Версия: v5 — с абсолютными путями относительно корня сайта
 
-const CACHE_NAME = 'scooter-tracker-v1'; // Увеличивайте версию при обновлении
+const CACHE_NAME = 'scooter-tracker-v5';
+const BASE_PATH = '/ScooterTracker/'; // <- ваш репозиторий
+
+// Все файлы, которые должны быть доступны офлайн
 const URLS_TO_CACHE = [
-    '/',                          // корень (обычно index.html)
-    '/index.html',
-    '/manifest.json',
-    // Если у вас есть другие статические ресурсы (стили, скрипты), добавьте их сюда
-    // Например: '/style.css', '/app.js'
+    BASE_PATH,
+    BASE_PATH + 'index.html',
+    BASE_PATH + 'manifest.json',
+    BASE_PATH + 'sw.js'
 ];
 
-// Установка — кешируем основные файлы
+// Установка
 self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('Кеш открыт');
+                console.log('Кеш открыт, кешируем:', URLS_TO_CACHE);
                 return cache.addAll(URLS_TO_CACHE);
             })
-            .catch(err => console.error('Ошибка кеширования:', err))
+            .then(() => {
+                console.log('Кеширование завершено');
+                self.skipWaiting(); // сразу активируем
+            })
+            .catch(err => {
+                console.error('Ошибка кеширования:', err);
+                // Если один файл не закешировался, пробуем остальные
+                // но лучше исправить пути
+            })
     );
-    // Принудительно активируем новый SW сразу
-    self.skipWaiting();
 });
 
-// Активация — удаляем старые кеши
+// Активация
 self.addEventListener('activate', event => {
     event.waitUntil(
         caches.keys().then(cacheNames => {
@@ -36,24 +45,26 @@ self.addEventListener('activate', event => {
                 })
             );
         })
+        .then(() => {
+            console.log('Service Worker активирован');
+            self.clients.claim();
+        })
     );
-    // Захватываем управление сразу
-    self.clients.claim();
 });
 
-// Обработка запросов — стратегия: сначала кеш, затем сеть
+// Обработка запросов
 self.addEventListener('fetch', event => {
     event.respondWith(
         caches.match(event.request)
             .then(response => {
-                // Если есть в кеше — возвращаем
                 if (response) {
+                    // Если есть в кеше — возвращаем
                     return response;
                 }
-                // Иначе идём в сеть, кешируем и возвращаем
-                return fetch(event.request).then(
-                    networkResponse => {
-                        // Кешируем только успешные ответы
+                // Иначе идём в сеть
+                return fetch(event.request)
+                    .then(networkResponse => {
+                        // Кешируем успешные ответы
                         if (networkResponse && networkResponse.status === 200) {
                             const clone = networkResponse.clone();
                             caches.open(CACHE_NAME).then(cache => {
@@ -61,13 +72,15 @@ self.addEventListener('fetch', event => {
                             });
                         }
                         return networkResponse;
-                    }
-                ).catch(() => {
-                    // Если сеть недоступна и нет кеша — показываем страницу офлайн (опционально)
-                    // Можно вернуть заглушку, но лучше просто ошибку
-                    console.warn('Нет доступа к ресурсу:', event.request.url);
-                });
+                    })
+                    .catch(() => {
+                        // Если сеть недоступна и нет кеша — показываем ошибку
+                        console.warn('Нет доступа к ресурсу:', event.request.url);
+                        return new Response('Офлайн-режим: ресурс недоступен', {
+                            status: 503,
+                            statusText: 'Service Unavailable'
+                        });
+                    });
             })
     );
 });
-
