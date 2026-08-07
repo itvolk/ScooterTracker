@@ -1,12 +1,12 @@
 // sw.js — Service Worker для офлайн-доступа
 const CACHE_NAME = 'scooter-tracker-v10';
+const BASE = '/ScooterTracker/';
 
-// Пути относительно корня сайта
 const URLS_TO_CACHE = [
-    '/ScooterTracker/',
-    '/ScooterTracker/index.html',
-    '/ScooterTracker/sw.js'
-    '/ScooterTracker/manifest.json'
+    BASE,
+    BASE + 'index.html',
+    BASE + 'manifest.json',
+    BASE + 'sw.js'
 ];
 
 // Установка
@@ -23,27 +23,6 @@ self.addEventListener('install', event => {
             })
             .catch(err => {
                 console.error('Ошибка кеширования:', err);
-                // Пробуем кешировать по одному
-                event.waitUntil(
-                    caches.open(CACHE_NAME).then(cache => {
-                        return Promise.all(
-                            URLS_TO_CACHE.map(url => {
-                                return fetch(url)
-                                    .then(response => {
-                                        if (response.ok) {
-                                            cache.put(url, response);
-                                            console.log('Кешировано:', url);
-                                        } else {
-                                            console.warn('Не удалось кешировать:', url, response.status);
-                                        }
-                                    })
-                                    .catch(err => {
-                                        console.warn('Ошибка при кешировании:', url, err);
-                                    });
-                            })
-                        );
-                    })
-                );
             })
     );
 });
