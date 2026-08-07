@@ -2027,7 +2027,7 @@
                 if (nameEl && scooter) nameEl.textContent = '🛵 ' + scooter.name;
             }
 
-            // ---- ЭКСПОРТ через Web Share с fallback ----
+            // ---- ЭКСПОРТ через Web Share с улучшенной логикой ----
             function exportScooterData(scooterId) {
                 const store = loadAllScooters();
                 const scooter = store.scooters.find(s => s.id === scooterId);
@@ -2035,6 +2035,7 @@
                     showToast('Скутер не найден');
                     return;
                 }
+                // Собираем данные для экспорта
                 const exportData = {
                     version: '1.0',
                     exportedAt: new Date().toISOString(),
@@ -2047,29 +2048,43 @@
                 const fileName = `scooter_${scooter.name.replace(/\s/g, '_')}_${Date.now()}.json`;
                 const file = new File([blob], fileName, { type: 'application/json' });
 
+                // Функция-запасной вариант — скачать файл
                 function fallbackDownload() {
                     downloadFile(json, fileName, 'application/json');
                     showToast('📤 Файл сохранён локально');
                 }
 
-                if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-                    navigator.share({
-                        title: `Данные скутера ${scooter.name}`,
-                        text: `Экспорт данных скутера ${scooter.name} от ${new Date().toLocaleDateString()}`,
-                        files: [file]
-                    }).then(() => {
-                        showToast('📤 Данные отправлены');
-                    }).catch(err => {
-                        if (err.name === 'AbortError') {
-                            showToast('Отправка отменена');
-                        } else {
-                            console.warn('Web Share не сработал, скачиваем файл:', err);
-                            fallbackDownload();
+                // Пробуем Share API
+                if (navigator.share && navigator.canShare) {
+                    // Проверяем, можно ли поделиться файлом
+                    try {
+                        const canShare = navigator.canShare({ files: [file] });
+                        if (canShare) {
+                            navigator.share({
+                                title: `Данные скутера ${scooter.name}`,
+                                text: `Экспорт данных скутера ${scooter.name} от ${new Date().toLocaleDateString()}`,
+                                files: [file]
+                            }).then(() => {
+                                showToast('📤 Данные отправлены');
+                            }).catch(err => {
+                                if (err.name === 'AbortError') {
+                                    showToast('Отправка отменена');
+                                } else {
+                                    console.warn('Ошибка Share API:', err);
+                                    // Если ошибка, предлагаем скачать
+                                    fallbackDownload();
+                                }
+                            });
+                            return;
                         }
-                    });
-                } else {
-                    fallbackDownload();
+                    } catch(e) {
+                        console.warn('Ошибка проверки canShare:', e);
+                    }
                 }
+
+                // Если Share не сработал — показываем диалог выбора приложения для отправки через Android Intent
+                // или просто скачиваем файл
+                fallbackDownload();
             }
 
             function downloadFile(content, filename, mime) {
