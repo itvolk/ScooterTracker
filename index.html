@@ -1352,10 +1352,29 @@
         try {
             const STATS_PERIOD_STORAGE_KEY = 'stats_selected_period';
 
-            // ---- РЕГИСТРАЦИЯ SERVICE WORKER ----
+            // ---- РЕГИСТРАЦИЯ SERVICE WORKER С АВТООБНОВЛЕНИЕМ ----
             if ('serviceWorker' in navigator) {
                 navigator.serviceWorker.register('/ScooterTracker/sw.js')
-                    .then(reg => console.log('Service Worker зарегистрирован', reg))
+                    .then(reg => {
+                        console.log('Service Worker зарегистрирован', reg);
+                        
+                        // Проверяем обновления каждые 30 секунд
+                        setInterval(() => {
+                            reg.update();
+                            console.log('Проверка обновлений...');
+                        }, 30000);
+                        
+                        // Следим за новым SW и перезагружаем страницу
+                        reg.addEventListener('updatefound', () => {
+                            const newSW = reg.installing;
+                            newSW.addEventListener('statechange', () => {
+                                if (newSW.state === 'activated') {
+                                    console.log('Новая версия загружена, перезагружаем...');
+                                    window.location.reload();
+                                }
+                            });
+                        });
+                    })
                     .catch(err => console.warn('SW регистрация не удалась:', err));
             }
 
