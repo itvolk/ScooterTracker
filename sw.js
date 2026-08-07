@@ -1,12 +1,12 @@
 // sw.js — Service Worker для офлайн-доступа
-const CACHE_NAME = 'scooter-tracker-v6';
+const CACHE_NAME = 'scooter-tracker-v9';
 
 // Пути относительно корня сайта
 const URLS_TO_CACHE = [
     '/ScooterTracker/',
     '/ScooterTracker/index.html',
     '/ScooterTracker/sw.js'
-    // '/ScooterTracker/manifest.json' — раскомментируйте, когда создадите файл
+    '/ScooterTracker/manifest.json'
 ];
 
 // Установка
