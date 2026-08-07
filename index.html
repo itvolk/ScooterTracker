@@ -199,7 +199,6 @@
         .scooter-item .scooter-actions .delete-btn:hover {
             color: var(--btn-danger);
         }
-        /* НОВЫЕ кнопки экспорта/импорта */
         .scooter-actions .share-btn,
         .scooter-actions .import-btn {
             font-size: 18px;
@@ -208,7 +207,6 @@
         .scooter-actions .import-btn:hover {
             background: var(--border);
         }
-        /* Импорт-файл скрыт */
         .hidden-input {
             display: none;
         }
@@ -998,26 +996,75 @@
         </div>
     </div>
 
-    <!-- Модалка добавления расхода -->
+    <!-- Модалка добавления расхода (переименована) -->
     <div class="modal-overlay" id="addExpenseModal">
         <div class="modal">
-            <h2>➕ Добавить расход</h2>
-            <div class="input-row" style="flex-direction:column; gap:12px;">
-                <div style="width:100%;">
-                    <label>Категория</label>
-                    <select id="expenseCategory">
-                        <option value="to">ТО (техобслуживание)</option>
-                        <option value="parts">Запчасти</option>
-                        <option value="other">Другое</option>
-                    </select>
+            <h2>➕ Добавить запись</h2>
+            <div style="text-align:center; margin-bottom:12px; color:var(--text-secondary); font-size:14px;">Выберите тип записи</div>
+            <div style="display:flex; gap:8px; margin-bottom:16px;">
+                <button class="btn btn-sm btn-outline" id="expenseTypeExpense" style="flex:1;">💰 Расход</button>
+                <button class="btn btn-sm btn-outline" id="expenseTypeCharge" style="flex:1;">🔋 Зарядка</button>
+            </div>
+            <div id="expenseFormContainer">
+                <!-- Форма для расходов -->
+                <div id="expenseForm" style="display:block;">
+                    <div class="input-row" style="flex-direction:column; gap:12px;">
+                        <div style="width:100%;">
+                            <label>Категория</label>
+                            <select id="expenseCategory">
+                                <option value="to">ТО (техобслуживание)</option>
+                                <option value="parts">Запчасти</option>
+                                <option value="other">Другое</option>
+                            </select>
+                        </div>
+                        <div style="width:100%;">
+                            <label>Сумма (₽)</label>
+                            <input type="number" id="expenseAmount" step="0.01" min="0" placeholder="0.00">
+                        </div>
+                        <div style="width:100%;">
+                            <label>Описание (необязательно)</label>
+                            <input type="text" id="expenseDescription" placeholder="Напр. замена колодок">
+                        </div>
+                    </div>
                 </div>
-                <div style="width:100%;">
-                    <label>Сумма (₽)</label>
-                    <input type="number" id="expenseAmount" step="0.01" min="0" placeholder="0.00">
-                </div>
-                <div style="width:100%;">
-                    <label>Описание (необязательно)</label>
-                    <input type="text" id="expenseDescription" placeholder="Напр. замена колодок">
+                <!-- Форма для зарядок -->
+                <div id="chargeForm" style="display:none;">
+                    <div class="input-row" style="flex-direction:column; gap:12px;">
+                        <div style="width:100%;">
+                            <label>Добавлено %</label>
+                            <input type="number" id="manualChargePercent" step="1" min="1" max="100" placeholder="Напр. 50">
+                            <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Процент, который был добавлен за зарядку</div>
+                        </div>
+                        <div style="width:100%;">
+                            <label>Новый % заряда (после зарядки)</label>
+                            <input type="number" id="manualChargeNewPercent" step="1" min="1" max="100" placeholder="Напр. 100">
+                            <div style="font-size:12px; color:var(--text-secondary); margin-top:4px;">Какой стал заряд после зарядки</div>
+                        </div>
+                        <div style="width:100%;">
+                            <label>Тариф</label>
+                            <select id="manualChargeTariff">
+                                <option value="night">Ночной</option>
+                                <option value="day">Дневной</option>
+                                <option value="other">Другой</option>
+                                <option value="free">Бесплатно</option>
+                            </select>
+                        </div>
+                        <div style="width:100%;" id="manualChargePriceContainer">
+                            <label>Цена за кВт·ч (₽)</label>
+                            <input type="number" id="manualChargePrice" step="0.01" min="0" placeholder="5.2">
+                        </div>
+                        <div style="width:100%;">
+                            <label>Режим зарядки</label>
+                            <select id="manualChargeMode">
+                                <option value="normal">Обычная</option>
+                                <option value="fast">Быстрая</option>
+                            </select>
+                        </div>
+                        <div style="width:100%;">
+                            <label>Дата (оставьте пустым — текущая)</label>
+                            <input type="datetime-local" id="manualChargeDate">
+                        </div>
+                    </div>
                 </div>
             </div>
             <button class="btn btn-success" id="addExpenseSaveBtn">💾 Добавить</button>
@@ -1141,7 +1188,7 @@
     <div id="expenses-tab" class="tab-content">
         <div class="card">
             <div class="stats-controls">
-                <button class="btn btn-success btn-sm" id="addExpenseBtn">➕ Добавить расход</button>
+                <button class="btn btn-success btn-sm" id="addExpenseBtn">➕ Добавить запись</button>
                 <button class="btn btn-outline btn-sm" id="refreshExpensesBtn">🔄 Обновить</button>
             </div>
             <div class="stats-grid" id="expenseSummary">
@@ -1164,7 +1211,6 @@
             </div>
             <div id="scooterListContainer"><div class="empty">Загрузка...</div></div>
         </div>
-        <!-- Скрытый инпут для импорта файла -->
         <input type="file" id="importFileInput" class="hidden-input" accept=".json,.csv">
     </div>
 
@@ -1262,15 +1308,13 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.1.5";
+        const APP_VERSION = "3.1.6";
         const RELEASE_NOTES = [
-            "📤 Добавлена кнопка «Отправить» — экспорт данных скутера в JSON с отправкой через системный диалог (Web Share)",
-            "📥 Добавлена кнопка «Загрузить» — импорт данных скутера из JSON или CSV с выбором «Заменить» или «Добавить»",
-            "📊 Сохранение выбранного периода в статистике (по умолчанию «Всё время»)",
+            "➕ Добавлена возможность ручного добавления зарядок через раздел «Расходы» (для восстановления статистики)",
+            "📤 Добавлена кнопка «Отправить» — экспорт данных скутера в JSON через Web Share API",
+            "📥 Добавлена кнопка «Загрузить» — импорт данных из JSON или CSV",
+            "📊 Сохранение выбранного периода в статистике",
             "📱 Добавлена поддержка офлайн-режима (Service Worker)",
-            "🔧 Добавлена автоматическая корректировка отрицательного пробега с последней зарядки",
-            "🛠 Добавлена ручная установка пробега с последней зарядки в настройках",
-            "🗑️ Исправлено удаление зарядок — теперь сохраняется предыдущее состояние",
             "🛵 Поддержка нескольких скутеров",
             "👉 Навигация свайпами между вкладками"
         ];
@@ -1316,6 +1360,7 @@
             }
 
             const STORAGE_KEY = 'scooter_tracker_data_v3';
+            let currentExpenseType = 'expense'; // 'expense' или 'charge'
 
             function defaultScooterData() {
                 return {
@@ -1963,7 +2008,7 @@
                 if (nameEl && scooter) nameEl.textContent = '🛵 ' + scooter.name;
             }
 
-            // ---- ЭКСПОРТ через Web Share с fallback на скачивание ----
+            // ---- ЭКСПОРТ через Web Share с fallback ----
             function exportScooterData(scooterId) {
                 const store = loadAllScooters();
                 const scooter = store.scooters.find(s => s.id === scooterId);
@@ -1971,7 +2016,6 @@
                     showToast('Скутер не найден');
                     return;
                 }
-                // Собираем данные для экспорта
                 const exportData = {
                     version: '1.0',
                     exportedAt: new Date().toISOString(),
@@ -1984,13 +2028,11 @@
                 const fileName = `scooter_${scooter.name.replace(/\s/g, '_')}_${Date.now()}.json`;
                 const file = new File([blob], fileName, { type: 'application/json' });
 
-                // Функция-запасной вариант — скачать файл
                 function fallbackDownload() {
                     downloadFile(json, fileName, 'application/json');
                     showToast('📤 Файл сохранён локально');
                 }
 
-                // Проверяем поддержку Web Share API для файлов
                 if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
                     navigator.share({
                         title: `Данные скутера ${scooter.name}`,
@@ -2007,7 +2049,6 @@
                         }
                     });
                 } else {
-                    // Если API не поддерживается — скачиваем
                     fallbackDownload();
                 }
             }
@@ -2027,7 +2068,6 @@
             function importScooterData(scooterId) {
                 const input = document.getElementById('importFileInput');
                 if (!input) return;
-                // Сохраняем ID скутера для импорта
                 input.dataset.targetScooterId = scooterId;
                 input.click();
             }
@@ -2038,11 +2078,9 @@
                     try {
                         const text = e.target.result;
                         let importData;
-                        // Пробуем парсить как JSON
                         try {
                             importData = JSON.parse(text);
                         } catch (jsonError) {
-                            // Если не JSON, пробуем CSV
                             try {
                                 importData = parseCSV(text);
                             } catch (csvError) {
@@ -2051,21 +2089,14 @@
                             }
                         }
 
-                        // Проверяем структуру
                         if (!importData.data && !importData.trips) {
-                            // Пробуем определить: может быть экспорт из приложения или сырые данные
                             if (importData.version && importData.scooterId && importData.data) {
-                                // Это экспорт из нашего приложения
                                 importData = importData.data;
                             } else if (Array.isArray(importData)) {
-                                // Может быть массив поездок (старый формат)
                                 importData = { trips: importData };
-                            } else {
-                                // Просто объект — используем как есть
                             }
                         }
 
-                        // Приводим к стандартному виду
                         const newData = {
                             fullRange: importData.fullRange || 60,
                             batteryCapacity: importData.batteryCapacity || 1.0,
@@ -2087,7 +2118,6 @@
                             expenses: importData.expenses || []
                         };
 
-                        // Спрашиваем пользователя, как импортировать
                         const action = confirm('Заменить текущие данные скутера на импортированные?\nНажмите "ОК" — заменить.\n"Отмена" — добавить новые записи.');
 
                         const store = loadAllScooters();
@@ -2098,32 +2128,26 @@
                         }
 
                         if (action) {
-                            // Заменить всё
                             targetScooter.data = newData;
-                            // Обновляем totalTrips
                             targetScooter.data.totalTrips = targetScooter.data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
                             saveStore(store);
                             renderAll();
                             showToast('✅ Данные успешно заменены');
                         } else {
-                            // Добавить новые записи
                             const existingTrips = targetScooter.data.trips || [];
                             const existingChargeLog = targetScooter.data.chargeLog || [];
                             const existingExpenses = targetScooter.data.expenses || [];
 
-                            // Добавляем поездки с новыми ID
                             const newTrips = (newData.trips || []).map(t => ({
                                 ...t,
                                 id: 'trip_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
                             }));
-                            // Добавляем зарядки с новыми ID
                             const newChargeLog = (newData.chargeLog || []).map(c => ({
                                 ...c,
                                 id: 'charge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
                                 prevOdometer: null,
                                 prevPercent: null
                             }));
-                            // Добавляем расходы с новыми ID
                             const newExpenses = (newData.expenses || []).map(e => ({
                                 ...e,
                                 id: 'exp_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6)
@@ -2134,7 +2158,6 @@
                             targetScooter.data.expenses = existingExpenses.concat(newExpenses);
                             targetScooter.data.totalTrips = targetScooter.data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
 
-                            // Обновляем настройки только если они не заданы
                             if (!targetScooter.data.fullRange && newData.fullRange) targetScooter.data.fullRange = newData.fullRange;
                             if (!targetScooter.data.batteryCapacity && newData.batteryCapacity) targetScooter.data.batteryCapacity = newData.batteryCapacity;
                             if (!targetScooter.data.chargeEfficiencyNormal && newData.chargeEfficiencyNormal) targetScooter.data.chargeEfficiencyNormal = newData.chargeEfficiencyNormal;
@@ -2164,12 +2187,7 @@
                 if (lines.length < 2) throw new Error('Пустой CSV');
                 const headers = lines[0].split(',').map(h => h.trim());
                 const result = { trips: [], chargeLog: [], expenses: [] };
-                let tripsIndex = -1,
-                    chargeIndex = -1,
-                    expenseIndex = -1;
-                // Определяем тип данных по заголовкам
                 if (headers.some(h => h.includes('Расстояние') || h.includes('км'))) {
-                    // CSV с поездками
                     for (let i = 1; i < lines.length; i++) {
                         const parts = lines[i].split(',').map(p => p.trim());
                         if (parts.length < 3) continue;
@@ -2179,7 +2197,6 @@
                         const dist = parseFloat(parts[2]);
                         if (isNaN(dist)) continue;
                         if (type.includes('заряд') || type === 'зарядка') {
-                            // Зарядка
                             const added = parseFloat(parts[3]) || 0;
                             const newP = parseFloat(parts[4]) || 0;
                             result.chargeLog.push({
@@ -2192,7 +2209,6 @@
                                 chargeMode: 'normal'
                             });
                         } else {
-                            // Поездка или коррекция
                             const ttype = type.includes('коррек') ? 'correction' : 'trip';
                             result.trips.push({
                                 date: date.getTime(),
@@ -2208,6 +2224,105 @@
                     throw new Error('Неизвестный формат CSV');
                 }
                 return result;
+            }
+
+            // ---- РУЧНОЕ ДОБАВЛЕНИЕ ЗАРЯДКИ (без изменения состояния) ----
+            function addManualCharge() {
+                const data = loadActiveScooterData();
+                if (!data) return;
+
+                const addedPercent = parseInt(document.getElementById('manualChargePercent').value);
+                const newPercent = parseInt(document.getElementById('manualChargeNewPercent').value);
+                const tariffType = document.getElementById('manualChargeTariff').value;
+                const chargeMode = document.getElementById('manualChargeMode').value;
+                let pricePerKwh = null;
+                if (tariffType === 'other') {
+                    const val = parseFloat(document.getElementById('manualChargePrice').value);
+                    if (!isNaN(val) && val >= 0) pricePerKwh = val;
+                    else {
+                        showToast('Введите цену для тарифа "Другой"');
+                        return;
+                    }
+                }
+                let date = new Date();
+                const dateInput = document.getElementById('manualChargeDate').value;
+                if (dateInput) {
+                    const d = new Date(dateInput);
+                    if (!isNaN(d.getTime())) date = d;
+                }
+
+                if (isNaN(addedPercent) || addedPercent <= 0) {
+                    showToast('Введите корректный добавленный процент');
+                    return;
+                }
+                if (isNaN(newPercent) || newPercent <= 0) {
+                    showToast('Введите корректный новый процент');
+                    return;
+                }
+                if (newPercent < addedPercent) {
+                    showToast('Новый процент должен быть больше добавленного');
+                    return;
+                }
+
+                const cost = calcChargeCost(data, addedPercent, tariffType, pricePerKwh, chargeMode);
+                const chargeId = 'charge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+                // Добавляем зарядку без изменения состояния (prevOdometer = null, prevPercent = null)
+                data.chargeLog.push({
+                    id: chargeId,
+                    date: date.getTime(),
+                    addedPercent: addedPercent,
+                    newPercent: newPercent,
+                    tariffType: tariffType,
+                    pricePerKwh: tariffType === 'other' ? pricePerKwh : (tariffType === 'free' ? 0 : getTariffPrice(data, tariffType)),
+                    cost: cost,
+                    chargeMode: chargeMode,
+                    prevOdometer: null,
+                    prevPercent: null,
+                    isManual: true // отмечаем как ручную
+                });
+
+                saveActiveScooterData(data);
+                document.getElementById('addExpenseModal').classList.remove('open');
+                renderAll();
+                showToast(`🔋 Зарядка добавлена (${addedPercent}%, стоимость ${cost.toFixed(2)} ₽)`);
+            }
+
+            // ---- РУЧНОЕ ДОБАВЛЕНИЕ РАСХОДА ----
+            function addExpense() {
+                const data = loadActiveScooterData();
+                if (!data) return;
+                const category = document.getElementById('expenseCategory').value;
+                const amount = parseFloat(document.getElementById('expenseAmount').value);
+                const description = document.getElementById('expenseDescription').value.trim();
+                if (isNaN(amount) || amount <= 0) {
+                    showToast('Введите корректную сумму');
+                    return;
+                }
+                data.expenses.push({
+                    id: 'exp_' + Date.now(),
+                    date: Date.now(),
+                    category,
+                    amount,
+                    description: description || ''
+                });
+                saveActiveScooterData(data);
+                document.getElementById('addExpenseModal').classList.remove('open');
+                document.getElementById('expenseAmount').value = '';
+                document.getElementById('expenseDescription').value = '';
+                renderAll();
+                showToast(`➕ Расход добавлен (${amount.toFixed(2)} ₽)`);
+            }
+
+            // ---- Переключение типа записи в модалке ----
+            function setExpenseType(type) {
+                currentExpenseType = type;
+                document.getElementById('expenseForm').style.display = (type === 'expense') ? 'block' : 'none';
+                document.getElementById('chargeForm').style.display = (type === 'charge') ? 'block' : 'none';
+                document.getElementById('expenseTypeExpense').classList.toggle('active', type === 'expense');
+                document.getElementById('expenseTypeCharge').classList.toggle('active', type === 'charge');
+                // Обновляем заголовок
+                document.querySelector('#addExpenseModal h2').textContent = type === 'expense' ? '➕ Добавить расход' : '🔋 Добавить зарядку';
             }
 
             // ---- Ручная установка пробега с последней зарядки ----
@@ -2262,7 +2377,6 @@
                 html += '</div>';
                 container.innerHTML = html;
 
-                // Обработчики
                 container.querySelectorAll('.select-btn').forEach(btn => {
                     btn.addEventListener('click', function(e) {
                         e.stopPropagation();
@@ -2301,7 +2415,6 @@
                 });
             }
 
-            // Обработчик импорта файла
             document.getElementById('importFileInput').addEventListener('change', function(e) {
                 if (this.files && this.files[0]) {
                     const targetId = this.dataset.targetScooterId;
@@ -2526,22 +2639,29 @@
                 showToast('✅ Зарядка обновлена');
             }
 
-            function addExpense() {
-                const data = loadActiveScooterData();
-                if (!data) return;
-                const category = document.getElementById('expenseCategory').value;
-                const amount = parseFloat(document.getElementById('expenseAmount').value);
-                const description = document.getElementById('expenseDescription').value.trim();
-                if (isNaN(amount) || amount <= 0) { showToast('Введите корректную сумму'); return; }
-                data.expenses.push({ id: 'exp_' + Date.now(), date: Date.now(), category, amount, description: description || '' });
-                saveActiveScooterData(data);
-                document.getElementById('addExpenseModal').classList.remove('open');
+            // ---- ОБНОВЛЁННАЯ функция добавления расхода (с поддержкой двух типов) ----
+            function openAddExpenseModal() {
+                // Сбрасываем форму
                 document.getElementById('expenseAmount').value = '';
                 document.getElementById('expenseDescription').value = '';
-                renderAll();
-                showToast(`➕ Расход добавлен (${amount.toFixed(2)} ₽)`);
+                document.getElementById('manualChargePercent').value = '';
+                document.getElementById('manualChargeNewPercent').value = '';
+                document.getElementById('manualChargePrice').value = '';
+                document.getElementById('manualChargeDate').value = '';
+                // По умолчанию показываем расход
+                setExpenseType('expense');
+                document.getElementById('addExpenseModal').classList.add('open');
             }
 
+            function saveAddExpense() {
+                if (currentExpenseType === 'expense') {
+                    addExpense();
+                } else {
+                    addManualCharge();
+                }
+            }
+
+            // ---- Настройки ----
             function saveSetting(field, value, allowZero = false) {
                 const data = loadActiveScooterData();
                 if (!data) return;
@@ -2569,7 +2689,7 @@
                 showToast(`Настройка сохранена`);
             }
 
-            // ---- Экспорт/Импорт (старые кнопки из настроек, оставляем для совместимости) ----
+            // ---- Экспорт/Импорт (старые кнопки) ----
             function exportCSV() {
                 const data = loadActiveScooterData();
                 if (!data) return;
@@ -2814,18 +2934,32 @@
                         if (e.target === this) editChargeModal.classList.remove('open');
                     });
 
-                    // Модалка добавления расхода
-                    const addExpenseModal = document.getElementById('addExpenseModal');
+                    // Модалка добавления записи (расход/зарядка)
+                    document.getElementById('addExpenseBtn').addEventListener('click', openAddExpenseModal);
                     document.getElementById('addExpenseCancelBtn').addEventListener('click', function() {
-                        addExpenseModal.classList.remove('open');
+                        document.getElementById('addExpenseModal').classList.remove('open');
                     });
-                    document.getElementById('addExpenseSaveBtn').addEventListener('click', addExpense);
-                    addExpenseModal.addEventListener('click', function(e) {
-                        if (e.target === this) addExpenseModal.classList.remove('open');
+                    document.getElementById('addExpenseSaveBtn').addEventListener('click', saveAddExpense);
+                    document.getElementById('addExpenseModal').addEventListener('click', function(e) {
+                        if (e.target === this) document.getElementById('addExpenseModal').classList.remove('open');
                     });
-                    document.getElementById('addExpenseBtn').addEventListener('click', function() {
-                        addExpenseModal.classList.add('open');
+
+                    // Переключение типа записи
+                    document.getElementById('expenseTypeExpense').addEventListener('click', function() {
+                        setExpenseType('expense');
                     });
+                    document.getElementById('expenseTypeCharge').addEventListener('click', function() {
+                        setExpenseType('charge');
+                    });
+                    // Изначально активен расход
+                    setExpenseType('expense');
+
+                    // Показываем/скрываем поле цены для тарифа "Другой"
+                    document.getElementById('manualChargeTariff').addEventListener('change', function() {
+                        const container = document.getElementById('manualChargePriceContainer');
+                        container.style.display = (this.value === 'other') ? 'block' : 'none';
+                    });
+                    document.getElementById('manualChargePriceContainer').style.display = 'none';
 
                     // Модалка добавления скутера
                     const addScooterModal = document.getElementById('addScooterModal');
