@@ -2286,7 +2286,6 @@
                 const cost = calcChargeCost(data, addedPercent, tariffType, pricePerKwh, chargeMode);
                 const chargeId = 'charge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
 
-                // Добавляем зарядку без изменения состояния (prevOdometer = null, prevPercent = null)
                 data.chargeLog.push({
                     id: chargeId,
                     date: date.getTime(),
@@ -2298,11 +2297,20 @@
                     chargeMode: chargeMode,
                     prevOdometer: null,
                     prevPercent: null,
-                    isManual: true // отмечаем как ручную
+                    isManual: true
                 });
 
                 saveActiveScooterData(data);
-                document.getElementById('addExpenseModal').classList.remove('open');
+                
+                // ---- ОЧИЩАЕМ ФОРМУ ----
+                document.getElementById('manualChargePercent').value = '';
+                document.getElementById('manualChargeNewPercent').value = '';
+                document.getElementById('manualChargePrice').value = '';
+                document.getElementById('manualChargeDate').value = '';
+                document.getElementById('manualChargeTariff').value = 'night';
+                document.getElementById('manualChargeMode').value = 'normal';
+                document.getElementById('manualChargePriceContainer').style.display = 'none';
+                
                 renderAll();
                 showToast(`🔋 Зарядка добавлена (${addedPercent}%, стоимость ${cost.toFixed(2)} ₽)`);
             }
