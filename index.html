@@ -2053,6 +2053,50 @@
                     showToast('📤 Файл сохранён локально');
                 }
 
+                // ПРОСТОЙ СПОСОБ: всегда пытаемся поделиться текстом
+                // (это работает на большинстве Android-браузеров)
+                function exportScooterData(scooterId) {
+                    const store = loadAllScooters();
+                    const scooter = store.scooters.find(s => s.id === scooterId);
+                    if (!scooter) {
+                        showToast('Скутер не найден');
+                        return;
+                    }
+
+                    const exportData = {
+                        version: '1.0',
+                        exportedAt: new Date().toISOString(),
+                        scooterId: scooter.id,
+                        name: scooter.name,
+                        data: scooter.data
+                    };
+                    const json = JSON.stringify(exportData, null, 2);
+                    const fileName = `scooter_${scooter.name.replace(/\s/g, '_')}_${Date.now()}.json`;
+
+                    // ПРОБУЕМ ПРОСТОЙ СПОСОБ — отправка через share
+                    if (navigator.share) {
+                        navigator.share({
+                            title: `Данные скутера ${scooter.name}`,
+                            text: json,
+                            // Не добавляем files — так работает на 99% устройств
+                        }).then(() => {
+                            showToast('📤 Данные отправлены');
+                        }).catch(err => {
+                            if (err.name !== 'AbortError') {
+                                // Если не сработало — скачиваем
+                                downloadFile(json, fileName, 'application/json');
+                                showToast('📤 Файл сохранён локально');
+                            } else {
+                                showToast('Отправка отменена');
+                            }
+                        });
+                    } else {
+                        // Если Share API вообще нет — скачиваем
+                        downloadFile(json, fileName, 'application/json');
+                        showToast('📤 Файл сохранён локально');
+                    }
+                }
+
                 // Функция для отправки через Share API с текстом
                 function shareAsText() {
                     if (navigator.share) {
