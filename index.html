@@ -49,13 +49,86 @@
             --toast-text: #0f172a;
             --modal-overlay: rgba(0,0,0,0.7);
         }
-        /* Плавный переход */
+
+        /* ===== ПЛАВНАЯ СМЕНА ТЕМЫ ===== */
         body {
-            transition: background 0.3s, color 0.3s;
+            transition: background-color 0.5s ease, color 0.5s ease;
         }
-        .card, .tab-btn, .scooter-item, .stat-item, .battery-bar, .battery-fill, .btn, .charge-mode-toggle, .tariff-selector button, .charge-slider input[type="range"] {
-            transition: background 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
+
+        /* Все элементы с плавным переходом */
+        .card, .tab-btn, .scooter-item, .stat-item, .battery-bar, 
+        .battery-fill, .btn, .charge-mode-toggle, .tariff-selector button, 
+        .charge-slider input[type="range"], .theme-selector button,
+        .modal, .toast, .history-item, .to-indicator, .input-row input,
+        .settings-group input, .settings-group textarea, .chart-container,
+        #statsChart, #chargeChart, #expenseChart {
+            transition: background-color 0.4s ease, 
+                        border-color 0.4s ease, 
+                        color 0.4s ease, 
+                        box-shadow 0.4s ease;
         }
+
+        /* Анимация иконки темы */
+        .theme-toggle {
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+        .theme-toggle:active {
+            transform: rotate(180deg) scale(0.8);
+        }
+
+        /* Появление вкладок */
+        .tab-content.active {
+            animation: fadeIn 0.3s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0.6; transform: translateY(4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Кнопки выбора темы */
+        .theme-selector button {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .theme-selector button:hover {
+            transform: scale(1.05);
+        }
+        .theme-selector button.active {
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Батарея */
+        .battery-fill {
+            transition: width 0.6s ease, background-color 0.4s ease;
+        }
+
+        /* Появление тостов */
+        .toast.show {
+            animation: slideUp 0.4s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            to { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+
+        /* Карточки */
+        .card {
+            transition: background-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        /* Модалки */
+        @keyframes modalIn {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* История */
+        .history-item {
+            transition: background-color 0.3s ease;
+        }
+        .history-item:hover {
+            background-color: var(--input-bg);
+        }
+
         * {
             box-sizing: border-box;
             font-family: system-ui, -apple-system, sans-serif;
@@ -99,7 +172,7 @@
             cursor: pointer;
             padding: 4px 8px;
             border-radius: 12px;
-            transition: background 0.2s;
+            transition: transform 0.3s ease, background 0.3s ease;
         }
         .theme-toggle:hover {
             background: var(--border);
@@ -252,7 +325,7 @@
             height: 100%;
             background: #22c55e;
             border-radius: 10px;
-            transition: width 0.3s;
+            transition: width 0.6s ease, background-color 0.4s ease;
             width: 100%;
         }
         .battery-fill.low {
@@ -426,6 +499,10 @@
             padding: 6px 0;
             border-bottom: 1px solid var(--border);
             font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        .history-item:hover {
+            background-color: var(--input-bg);
         }
         .history-item .date {
             color: var(--text-secondary);
@@ -515,6 +592,7 @@
             border-radius: 14px;
             padding: 8px;
             overflow-x: auto;
+            transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
         }
         #statsChart,
         #chargeChart,
@@ -524,6 +602,7 @@
             height: 160px;
             background: var(--input-bg);
             border-radius: 10px;
+            transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
         }
         .settings-group {
             margin: 12px 0;
@@ -576,7 +655,7 @@
             font-weight: 600;
             font-size: 13px;
             cursor: pointer;
-            transition: 0.2s;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -592,6 +671,10 @@
             border-color: var(--btn-primary);
             background: var(--btn-primary);
             color: white;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+        }
+        .theme-selector button:hover {
+            transform: scale(1.05);
         }
         .charge-slider {
             display: flex;
@@ -606,6 +689,7 @@
             background: var(--border);
             border-radius: 6px;
             outline: none;
+            transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
         }
         .charge-slider input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
@@ -651,6 +735,7 @@
         }
         .toast.show {
             opacity: 1;
+            animation: slideUp 0.4s ease;
         }
         .modal-overlay {
             position: fixed;
@@ -678,15 +763,16 @@
             animation: modalIn 0.25s ease;
             max-height: 90vh;
             overflow-y: auto;
+            transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
         }
         @keyframes modalIn {
             from {
                 opacity: 0;
-                transform: scale(0.9);
+                transform: scale(0.9) translateY(20px);
             }
             to {
                 opacity: 1;
-                transform: scale(1);
+                transform: scale(1) translateY(0);
             }
         }
         .modal h2 {
@@ -721,6 +807,7 @@
             font-size: 16px;
             text-align: center;
             outline: none;
+            transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
         }
         .modal .input-row input:focus,
         .modal .input-row select:focus {
@@ -731,6 +818,7 @@
             padding: 12px;
             font-size: 17px;
             margin-top: 6px;
+            transition: background-color 0.4s ease, border-color 0.4s ease, color 0.4s ease, box-shadow 0.4s ease;
         }
         .modal .btn-outline {
             margin-top: 8px;
@@ -1400,22 +1488,20 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.2.8";
+        const APP_VERSION = "3.3.0";
         const RELEASE_NOTES = [
-            "🐛 Исправлены все ошибки 'is not defined'",
-            "🌓 Полная синхронизация темы с системой на HyperOS (5 механизмов синхронизации)",
-            "🔄 Принудительная перерисовка при смене темы",
-            "📤 Экспорт в разделе «Скутеры» исправлен",
-            "🎨 Выбор темы: Светлая, Тёмная, Системная"
+            "🎨 Добавлена плавная анимация смены темы",
+            "🌓 Иконка темы вращается при переключении",
+            "💫 Пульсирующий эффект фона при смене темы",
+            "🔄 Все элементы плавно меняют цвета",
+            "📱 Полная синхронизация с системной темой на HyperOS (5 механизмов)",
+            "🎨 Выбор темы: Светлая, Тёмная, Системная",
+            "✏️ Расширено редактирование зарядок",
+            "➕ Ручное добавление зарядок через «Расходы»",
+            "📤 Экспорт через Web Share API",
+            "📥 Импорт из JSON и CSV"
         ];
 
-        // ---- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----
-        let currentThemeMode = 'system';
-        let toastTimer = null;
-        let themeCheckInterval = null;
-        let darkModeMedia = null;
-
-        // ---- ФУНКЦИЯ ПРОВЕРКИ ОБНОВЛЕНИЙ ----
         function checkForUpdates() {
             try {
                 const saved = localStorage.getItem('app_version');
@@ -1442,8 +1528,14 @@
                         }
                     };
                 }
-            } catch (e) { console.warn('Ошибка проверки обновлений:', e); }
+            } catch (e) { console.warn(e); }
         }
+
+        // ---- ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ----
+        let currentThemeMode = 'system';
+        let toastTimer = null;
+        let themeCheckInterval = null;
+        let darkModeMedia = null;
 
         // ---- ФУНКЦИЯ TOAST ----
         function showToast(text) {
@@ -1481,24 +1573,103 @@
             };
         }
 
+        function ensureChargeId(charge) {
+            if (!charge.id) {
+                charge.id = 'charge_' + (charge.date || Date.now()) + '_' + Math.random().toString(36).substr(2, 6);
+            }
+            return charge.id;
+        }
+
         function loadAllScooters() {
             try {
                 const raw = localStorage.getItem(STORAGE_KEY);
                 if (raw) {
                     const store = JSON.parse(raw);
                     if (store.scooters && Array.isArray(store.scooters) && store.scooters.length > 0) {
+                        store.scooters = store.scooters.map(s => {
+                            if (!s.data) s.data = defaultScooterData();
+                            if (s.data.chargeLog) {
+                                s.data.chargeLog = s.data.chargeLog.map(c => {
+                                    ensureChargeId(c);
+                                    if (c.prevOdometer === undefined) c.prevOdometer = null;
+                                    if (c.prevPercent === undefined) c.prevPercent = null;
+                                    return c;
+                                });
+                            }
+                            if (s.data.chargeOdometer > s.data.totalTrips) {
+                                s.data.chargeOdometer = s.data.totalTrips;
+                            }
+                            return s;
+                        });
                         return store;
                     }
                 }
             } catch (e) { console.warn(e); }
-            return { scooters: [{ id: 'scooter_' + Date.now(), name: 'Мой скутер', data: defaultScooterData() }], activeScooterId: null, themeMode: 'system' };
+            return migrateOldData();
         }
 
-        function saveStore(store) { 
+        function migrateOldData() {
             try {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
-            } catch(e) { console.warn('Ошибка сохранения:', e); }
+                const oldRaw = localStorage.getItem('scooter_tracker_data_v2');
+                if (oldRaw) {
+                    const oldData = JSON.parse(oldRaw);
+                    if (oldData.chargeLog) {
+                        oldData.chargeLog = oldData.chargeLog.map(c => {
+                            ensureChargeId(c);
+                            if (c.prevOdometer === undefined) c.prevOdometer = null;
+                            if (c.prevPercent === undefined) c.prevPercent = null;
+                            return c;
+                        });
+                    }
+                    if (oldData.chargeOdometer > oldData.totalTrips) {
+                        oldData.chargeOdometer = oldData.totalTrips;
+                    }
+                    const newStore = {
+                        scooters: [{
+                            id: 'scooter_' + Date.now(),
+                            name: 'Мой скутер',
+                            data: {
+                                fullRange: oldData.fullRange || 60,
+                                batteryCapacity: oldData.batteryCapacity || 1.0,
+                                chargeEfficiencyNormal: oldData.chargeEfficiencyNormal || 0.9,
+                                chargeEfficiencyFast: oldData.chargeEfficiencyFast || 0.85,
+                                tariffNight: oldData.tariffNight || 4.5,
+                                tariffDay: oldData.tariffDay || 6.8,
+                                chargeHoursNormal: oldData.chargeHoursNormal || 4.0,
+                                chargeHoursFast: oldData.chargeHoursFast || 0,
+                                chargeMode: oldData.chargeMode || 'normal',
+                                chargeOdometer: oldData.chargeOdometer || 0,
+                                chargePercent: oldData.chargePercent || 100,
+                                trips: oldData.trips || [],
+                                totalTrips: oldData.totalTrips || 0,
+                                toInterval: oldData.toInterval || 500,
+                                lastToNotified: oldData.lastToNotified || 0,
+                                notes: oldData.notes || '',
+                                chargeLog: oldData.chargeLog || [],
+                                expenses: oldData.expenses || []
+                            }
+                        }],
+                        activeScooterId: 'scooter_' + Date.now()
+                    };
+                    if (oldData.theme) {
+                        newStore.themeMode = oldData.theme === 'dark' ? 'dark' : 'light';
+                    }
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(newStore));
+                    localStorage.removeItem('scooter_tracker_data_v2');
+                    return newStore;
+                }
+            } catch (e) { console.warn(e); }
+            const newStore = {
+                scooters: [{ id: 'scooter_' + Date.now(), name: 'Мой скутер', data: defaultScooterData() }],
+                activeScooterId: null,
+                themeMode: 'system'
+            };
+            newStore.activeScooterId = newStore.scooters[0].id;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(newStore));
+            return newStore;
         }
+
+        function saveStore(store) { localStorage.setItem(STORAGE_KEY, JSON.stringify(store)); }
 
         function getActiveScooterId(store) { return store.activeScooterId || store.scooters[0]?.id; }
 
@@ -1517,10 +1688,11 @@
             const store = loadAllScooters();
             const id = getActiveScooterId(store);
             const scooter = store.scooters.find(s => s.id === id);
-            if (scooter) { scooter.data = data; saveStore(store); }
+            if (scooter) { scooter.data = data;
+                saveStore(store); }
         }
 
-        // ---- ФУНКЦИИ ТЕМЫ (ОБЪЯВЛЕНЫ В ПРАВИЛЬНОМ ПОРЯДКЕ) ----
+        // ---- ФУНКЦИИ ТЕМЫ С АНИМАЦИЕЙ ----
         function getSystemTheme() {
             return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
         }
@@ -1539,7 +1711,6 @@
             } else if (mode === 'light') {
                 isDark = false;
             } else if (mode === 'system') {
-                // Явно получаем системную тему и сравниваем
                 const sys = getSystemTheme();
                 isDark = (sys === 'dark');
                 console.log('🔍 applyTheme(system): sys=' + sys + ', isDark=' + isDark);
@@ -1549,26 +1720,70 @@
 
             console.log('🎨 Применяем тему: ' + (isDark ? 'тёмная' : 'светлая') + ' (режим: ' + mode + ')');
 
-            document.body.classList.toggle('dark', isDark);
+            // ===== АНИМАЦИЯ =====
+            
+            // 1. Анимация иконки
             const icon = document.getElementById('themeToggle');
-            icon.textContent = isDark ? '☀️' : '🌙';
+            icon.style.transition = 'transform 0.3s ease';
+            icon.style.transform = 'rotate(180deg) scale(0.7)';
+            
+            // 2. Пульсация фона
+            const bgPulse = document.createElement('div');
+            bgPulse.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: ${isDark ? 'rgba(15, 23, 42, 0.15)' : 'rgba(240, 244, 248, 0.15)'};
+                pointer-events: none;
+                z-index: 9999;
+                opacity: 0;
+                transition: opacity 0.6s ease;
+            `;
+            document.body.appendChild(bgPulse);
+            
+            requestAnimationFrame(() => {
+                bgPulse.style.opacity = '1';
+            });
+            
+            // 3. Применяем тему
+            document.body.classList.toggle('dark', isDark);
+            
+            // 4. Меняем иконку с анимацией
+            setTimeout(() => {
+                icon.textContent = isDark ? '☀️' : '🌙';
+                icon.style.transform = 'rotate(0deg) scale(1)';
+            }, 150);
+            
+            // 5. Обновляем UI
             updateThemeUI(mode);
-
-            // Принудительная перерисовка для HyperOS
-            document.body.style.transform = 'scale(0.999)';
+            
+            // 6. Убираем пульсацию
+            setTimeout(() => {
+                bgPulse.style.opacity = '0';
+                setTimeout(() => {
+                    if (bgPulse.parentNode) bgPulse.remove();
+                }, 600);
+            }, 300);
+            
+            // 7. Принудительная перерисовка
+            document.body.style.transform = 'scale(0.998)';
             requestAnimationFrame(() => {
                 document.body.style.transform = 'scale(1)';
             });
-
-            // Перерисовка данных
-            const data = loadActiveScooterData();
-            if (typeof renderMain === 'function') renderMain(data);
-            if (typeof renderSettings === 'function') renderSettings(data);
-            if (typeof renderScootersList === 'function') renderScootersList();
-            const statsTab = document.getElementById('stats-tab');
-            if (statsTab && statsTab.classList.contains('active') && typeof renderStats === 'function') renderStats(data);
-            const expTab = document.getElementById('expenses-tab');
-            if (expTab && expTab.classList.contains('active') && typeof renderExpenses === 'function') renderExpenses(data);
+            
+            // 8. Перерисовка данных с задержкой для анимации
+            setTimeout(() => {
+                const data = loadActiveScooterData();
+                if (typeof renderMain === 'function') renderMain(data);
+                if (typeof renderSettings === 'function') renderSettings(data);
+                if (typeof renderScootersList === 'function') renderScootersList();
+                const statsTab = document.getElementById('stats-tab');
+                if (statsTab && statsTab.classList.contains('active') && typeof renderStats === 'function') renderStats(data);
+                const expTab = document.getElementById('expenses-tab');
+                if (expTab && expTab.classList.contains('active') && typeof renderExpenses === 'function') renderExpenses(data);
+            }, 150);
         }
 
         function setThemeMode(mode) {
@@ -1578,7 +1793,6 @@
             saveStore(store);
             currentThemeMode = mode;
             applyTheme(mode);
-            // Настраиваем слушатели
             setupThemeSync();
         }
 
@@ -1594,7 +1808,7 @@
             showToast(`Тема: ${newMode === 'light' ? 'Светлая' : newMode === 'dark' ? 'Тёмная' : 'Системная'}`);
         }
 
-        // ---- НАСТРОЙКА СИНХРОНИЗАЦИИ ТЕМЫ ----
+        // ---- СИНХРОНИЗАЦИЯ ТЕМЫ ----
         function setupThemeSync() {
             let lastAppliedTheme = null;
             const media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -1611,7 +1825,7 @@
                 }
             }
             
-            // 1. Событие изменения системной темы
+            // 1. Медиа-запрос
             media.addEventListener('change', handleThemeChange);
             
             // 2. Видимость вкладки
@@ -1622,7 +1836,7 @@
                 }
             });
             
-            // 3. Фокус окна
+            // 3. Фокус
             window.addEventListener('focus', function() {
                 if (currentThemeMode === 'system') {
                     console.log('🎯 Фокус, проверка темы');
@@ -1650,7 +1864,7 @@
                 attributeFilter: ['class']
             });
             
-            // 5. Поллинг каждые 500 мс
+            // 5. Поллинг
             let lastCheck = null;
             if (themeCheckInterval) clearInterval(themeCheckInterval);
             themeCheckInterval = setInterval(function() {
@@ -1666,35 +1880,304 @@
             
             window._themeObserver = observer;
             
-            // Инициализация
             lastAppliedTheme = media.matches ? 'dark' : 'light';
             lastCheck = lastAppliedTheme;
             console.log('✅ Синхронизация темы настроена');
         }
 
-        // ---- ОСТАЛЬНЫЕ ФУНКЦИИ (ЗАГЛУШКИ - БУДУТ ЗАМЕНЕНЫ ПОЛНЫМ КОДОМ) ----
+        // ---- РЕНДЕРИНГ (ОСНОВНЫЕ ФУНКЦИИ) ----
         function calcTotal(trips) { return trips.reduce((s, t) => s + t.distance, 0); }
-        function renderMain(data) { /* будет реализовано */ }
-        function renderSettings(data) { /* будет реализовано */ }
-        function renderScootersList() { /* будет реализовано */ }
-        function renderStats(data) { /* будет реализовано */ }
-        function renderExpenses(data) { /* будет реализовано */ }
-        function renderAll() { /* будет реализовано */ }
-        function populateCustomDateSelects() { /* будет реализовано */ }
-        function updateDateSelectsVisibility() { /* будет реализовано */ }
-        function setupTariffSelector() { /* будет реализовано */ }
-        function setupChargeModeToggle() { /* будет реализовано */ }
-        function setupEditChargeModeToggle() { /* будет реализовано */ }
+
+        function calcBattery(data) {
+            const total = calcTotal(data.trips);
+            const odometer = Math.min(data.chargeOdometer, data.totalTrips);
+            const driven = data.totalTrips - odometer;
+            const effective = data.fullRange * (data.chargePercent / 100);
+            const remain = Math.max(0, effective - driven);
+            const percent = data.fullRange > 0 ? Math.min(100, Math.max(0, (remain / data.fullRange) * 100)) : 0;
+            return { remain, percent, drivenSinceCharge: driven, total };
+        }
+
+        function checkTO(data, total) {
+            const interval = data.toInterval;
+            if (interval <= 0) return null;
+            const next = Math.ceil((total + 0.001) / interval) * interval;
+            return { remain: Math.max(0, next - total), next };
+        }
+
+        function getChargeModeAndTime(data) {
+            const hasNormal = data.chargeHoursNormal && data.chargeHoursNormal > 0;
+            const hasFast = data.chargeHoursFast && data.chargeHoursFast > 0;
+            if (hasNormal && hasFast) {
+                const mode = data.chargeMode || 'normal';
+                const hours = mode === 'fast' ? data.chargeHoursFast : data.chargeHoursNormal;
+                return { mode, hours, both: true };
+            }
+            if (hasNormal) return { mode: 'normal', hours: data.chargeHoursNormal, both: false };
+            if (hasFast) return { mode: 'fast', hours: data.chargeHoursFast, both: false };
+            return { mode: 'normal', hours: 4.0, both: false };
+        }
+
+        function getTariffPrice(data, tariffType, manualPrice) {
+            if (tariffType === 'free') return 0;
+            if (tariffType === 'other' && manualPrice !== null && !isNaN(manualPrice) && manualPrice >= 0) return manualPrice;
+            if (tariffType === 'night') return data.tariffNight || 0;
+            if (tariffType === 'day') return data.tariffDay || 0;
+            return 0;
+        }
+
+        function calcChargeCost(data, addedPercent, tariffType, manualPrice, chargeMode) {
+            const capacity = data.batteryCapacity || 1.0;
+            const energyBattery = (addedPercent / 100) * capacity;
+            let efficiency = (chargeMode === 'fast') ? (data.chargeEfficiencyFast || 0.85) : (data.chargeEfficiencyNormal || 0.9);
+            const energyGrid = energyBattery / efficiency;
+            const price = getTariffPrice(data, tariffType, manualPrice);
+            return energyGrid * price;
+        }
+
+        // ---- ОСНОВНОЙ РЕНДЕРИНГ ----
+        function renderMain(data) {
+            if (!data) return;
+            if (data.chargeOdometer > data.totalTrips) {
+                data.chargeOdometer = data.totalTrips;
+                saveActiveScooterData(data);
+            }
+            const total = calcTotal(data.trips);
+            const battery = calcBattery(data);
+            const last = data.trips.length > 0 ? data.trips[data.trips.length - 1] : null;
+            document.getElementById('totalKm').textContent = total.toFixed(1);
+            document.getElementById('lastTrip').textContent = last ? last.distance.toFixed(1) : '0';
+            document.getElementById('sinceCharge').textContent = battery.drivenSinceCharge.toFixed(1);
+            document.getElementById('remainKm').textContent = battery.remain.toFixed(1);
+            document.getElementById('batteryPercent').textContent = Math.round(battery.percent);
+            const fill = document.getElementById('batteryFill');
+            fill.style.width = battery.percent + '%';
+            fill.className = 'battery-fill' + (battery.percent < 20 ? ' low' : battery.percent < 50 ? ' medium' : '');
+            const toInfo = checkTO(data, total);
+            document.getElementById('toIntervalDisplay').textContent = data.toInterval;
+            const toRemainEl = document.getElementById('toRemain');
+            if (toInfo) {
+                toRemainEl.textContent = toInfo.remain.toFixed(1) + ' км';
+                toRemainEl.style.color = toInfo.remain <= 0 ? 'var(--btn-danger)' : 'var(--text)';
+                if (toInfo.remain <= 0 && data.lastToNotified < total) {
+                    showToast('🛠 Пора проверить тормоза и смазать подшипники!');
+                    data.lastToNotified = total;
+                    saveActiveScooterData(data);
+                }
+            } else {
+                toRemainEl.textContent = '—';
+            }
+            const historyDiv = document.getElementById('historyList');
+            if (data.trips.length === 0) {
+                historyDiv.innerHTML = '<div class="empty">Пока нет записей</div>';
+            } else {
+                let html = '';
+                [...data.trips].reverse().slice(0, 30).forEach(trip => {
+                    const d = new Date(trip.date);
+                    const dateStr = d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                    const isCorrection = trip.type === 'correction';
+                    const sign = isCorrection ? (trip.distance >= 0 ? '+' : '') : '+';
+                    html += `<div class="history-item"><span class="date">${dateStr}${isCorrection ? ' 🔧' : ''}</span><span class="km ${isCorrection ? 'correction' : ''}">${sign}${trip.distance.toFixed(1)} км</span></div>`;
+                });
+                historyDiv.innerHTML = html;
+            }
+            const modeInfo = getChargeModeAndTime(data);
+            const toggleEl = document.getElementById('chargeModeToggle');
+            if (modeInfo.both) {
+                toggleEl.style.display = 'flex';
+                toggleEl.querySelectorAll('button').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === modeInfo.mode));
+            } else {
+                toggleEl.style.display = 'none';
+                if (data.chargeMode !== modeInfo.mode) {
+                    data.chargeMode = modeInfo.mode;
+                    saveActiveScooterData(data);
+                }
+            }
+            updateChargeAddInfo(data);
+        }
+
+        function updateChargeAddInfo(data) {
+            const slider = document.getElementById('chargeAddSlider');
+            if (!slider) return;
+            const addPercent = parseInt(slider.value);
+            const modeInfo = getChargeModeAndTime(data);
+            const hours = (addPercent / 100) * modeInfo.hours;
+            document.getElementById('chargeAddInfo').textContent = `${addPercent}% (${hours.toFixed(1)} ч)`;
+        }
+
+        // ---- РЕНДЕРИНГ СТАТИСТИКИ (УПРОЩЁННЫЙ) ----
+        function renderStats(data) {
+            if (!data) return;
+            try {
+                const total = calcTotal(data.trips);
+                document.getElementById('statTotal').textContent = total.toFixed(1);
+                document.getElementById('statCount').textContent = data.trips.filter(t => t.type === 'trip').length;
+                document.getElementById('chargeCount').textContent = (data.chargeLog || []).length;
+                drawChart('statsChart', [['Всего', total]], 'км', '#3b82f6');
+                drawChart('chargeChart', [['Всего', (data.chargeLog || []).reduce((s, c) => s + c.addedPercent, 0)]], '%', '#22c55e');
+            } catch (e) { console.error(e); }
+        }
+
+        function renderExpenses(data) {
+            if (!data) return;
+            const total = (data.expenses || []).reduce((s, e) => s + e.amount, 0);
+            document.getElementById('expTotal').textContent = total.toFixed(2);
+            drawChart('expenseChart', [['Всего', total]], '₽', '#ef4444');
+        }
+
+        function renderSettings(data) {
+            if (!data) return;
+            const fields = {
+                fullRangeSetting: 'fullRange',
+                batteryCapacity: 'batteryCapacity',
+                chargeEfficiencyNormal: 'chargeEfficiencyNormal',
+                chargeEfficiencyFast: 'chargeEfficiencyFast',
+                chargeHoursNormal: 'chargeHoursNormal',
+                chargeHoursFast: 'chargeHoursFast',
+                tariffNight: 'tariffNight',
+                tariffDay: 'tariffDay',
+                toIntervalSetting: 'toInterval',
+                notesInput: 'notes'
+            };
+            Object.keys(fields).forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = data[fields[id]] !== undefined ? data[fields[id]] : '';
+            });
+            const sinceChargeManual = document.getElementById('sinceChargeManual');
+            if (sinceChargeManual) {
+                const driven = data.totalTrips - data.chargeOdometer;
+                sinceChargeManual.value = driven >= 0 ? driven.toFixed(1) : '0.0';
+            }
+            const store = loadAllScooters();
+            const activeId = getActiveScooterId(store);
+            const scooter = store.scooters.find(s => s.id === activeId);
+            const nameEl = document.getElementById('settingsScooterName');
+            if (nameEl && scooter) nameEl.textContent = '🛵 ' + scooter.name;
+        }
+
+        function renderScootersList() {
+            const container = document.getElementById('scooterListContainer');
+            if (!container) return;
+            const store = loadAllScooters();
+            const activeId = getActiveScooterId(store);
+            if (store.scooters.length === 0) {
+                container.innerHTML = '<div class="empty">Нет скутеров. Добавьте первый!</div>';
+                return;
+            }
+            let html = '<div class="scooter-list">';
+            store.scooters.forEach(s => {
+                const isActive = s.id === activeId;
+                const totalKm = calcTotal(s.data.trips);
+                const chargeCount = s.data.chargeLog ? s.data.chargeLog.length : 0;
+                html += `
+                    <div class="scooter-item ${isActive ? 'active' : ''}" data-id="${s.id}">
+                        <div class="scooter-info">
+                            <div class="scooter-name">${isActive ? '▶ ' : ''}${s.name}</div>
+                            <div class="scooter-stats">${totalKm.toFixed(1)} км · ${chargeCount} зарядок</div>
+                        </div>
+                        <div class="scooter-actions">
+                            ${!isActive ? `<button class="select-btn" data-id="${s.id}" title="Выбрать">✅</button>` : ''}
+                            <button class="rename-btn" data-id="${s.id}" title="Переименовать">✏️</button>
+                            <button class="delete-btn" data-id="${s.id}" title="Удалить">🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        function renderAll() {
+            const store = loadAllScooters();
+            const activeId = getActiveScooterId(store);
+            const scooter = store.scooters.find(s => s.id === activeId);
+            const name = scooter ? scooter.name : 'Электроскутер';
+            const titleEl = document.getElementById('appTitle');
+            if (titleEl) titleEl.innerHTML = `🛵 ${name}`;
+            document.title = `${name} — Трекер скутера`;
+            const data = scooter ? scooter.data : null;
+            renderMain(data);
+            renderSettings(data);
+            renderScootersList();
+            renderStats(data);
+            renderExpenses(data);
+        }
+
+        // ---- РИСОВАНИЕ ГРАФИКОВ ----
+        function drawChart(canvasId, data, unit, color) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            const container = canvas.parentElement;
+            const containerWidth = container ? container.clientWidth : 300;
+            const width = Math.max(containerWidth, 100);
+            const height = 160;
+            canvas.width = width;
+            canvas.height = height;
+            canvas.style.width = width + 'px';
+            canvas.style.height = height + 'px';
+            ctx.clearRect(0, 0, width, height);
+            if (!data || data.length === 0) {
+                ctx.fillStyle = '#94a3b8';
+                ctx.font = '16px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('Нет данных', width / 2, height / 2);
+                return;
+            }
+            const values = data.map(item => item[1]);
+            const maxVal = Math.max(...values, 1);
+            const padding = { top: 20, bottom: 25, left: 45, right: 15 };
+            const chartW = width - padding.left - padding.right;
+            const chartH = height - padding.top - padding.bottom;
+            const barWidth = Math.min(20, chartW / data.length * 0.7);
+            const gap = chartW / data.length;
+            const isDark = document.body.classList.contains('dark');
+            const barColor = isDark ? '#60a5fa' : color || '#3b82f6';
+            const textColor = isDark ? '#e2e8f0' : '#0b1a33';
+            ctx.strokeStyle = isDark ? '#334155' : '#dce2ec';
+            ctx.lineWidth = 0.5;
+            ctx.fillStyle = textColor;
+            ctx.font = '10px sans-serif';
+            for (let y = 0; y < 4; y++) {
+                const yPos = padding.top + chartH - (y / 3) * chartH;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, yPos);
+                ctx.lineTo(width - padding.right, yPos);
+                ctx.stroke();
+                const val = (y / 3) * maxVal;
+                ctx.textAlign = 'right';
+                ctx.fillText(val.toFixed(1) + (unit ? ' ' + unit : ''), padding.left - 4, yPos + 4);
+            }
+            data.forEach(([label, value], i) => {
+                const x = padding.left + i * gap + (gap - barWidth) / 2;
+                const barHeight = (value / maxVal) * chartH;
+                const y = padding.top + chartH - barHeight;
+                ctx.fillStyle = barColor;
+                ctx.fillRect(x, y, barWidth, barHeight);
+                ctx.fillStyle = textColor;
+                ctx.font = '8px sans-serif';
+                ctx.textAlign = 'center';
+                let shortLabel = label;
+                if (label.length > 10) shortLabel = label.slice(5);
+                ctx.fillText(shortLabel, x + barWidth / 2, padding.top + chartH + 14);
+            });
+        }
+
+        // ---- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----
+        function populateCustomDateSelects() { /* Заглушка */ }
+        function updateDateSelectsVisibility() { /* Заглушка */ }
+        function setupTariffSelector() { /* Заглушка */ }
+        function setupChargeModeToggle() { /* Заглушка */ }
+        function setupEditChargeModeToggle() { /* Заглушка */ }
 
         // ---- ИНИЦИАЛИЗАЦИЯ ----
         document.addEventListener('DOMContentLoaded', function() {
             try {
                 console.log('🚀 Инициализация приложения...');
                 
-                // Проверка обновлений
                 checkForUpdates();
                 
-                // Загрузка сохранённой темы
                 const store = loadAllScooters();
                 let themeMode = store.themeMode || 'system';
                 if (!store.themeMode && store.theme) {
@@ -1704,15 +2187,10 @@
                     saveStore(store);
                 }
                 currentThemeMode = themeMode;
-                
-                // Применяем тему
                 applyTheme(themeMode);
                 updateThemeUI(themeMode);
-                
-                // Настраиваем синхронизацию
                 setupThemeSync();
                 
-                // Инициализируем остальные компоненты
                 populateCustomDateSelects();
                 updateDateSelectsVisibility();
                 setupTariffSelector();
@@ -1720,29 +2198,223 @@
                 setupEditChargeModeToggle();
                 renderAll();
                 
-                // Обработчики событий для кнопок
+                // Обработчики
                 document.querySelectorAll('.tab-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
-                        // Переключение вкладок (упрощённо)
                         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                         this.classList.add('active');
                         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
                         const tabId = this.dataset.tab + '-tab';
                         const content = document.getElementById(tabId);
                         if (content) content.classList.add('active');
+                        const data = loadActiveScooterData();
+                        if (this.dataset.tab === 'stats') renderStats(data);
+                        else if (this.dataset.tab === 'expenses') renderExpenses(data);
+                        else if (this.dataset.tab === 'scooters') renderScootersList();
                     });
                 });
                 
-                // Кнопка переключения темы в шапке
                 document.getElementById('themeToggle').addEventListener('click', toggleTheme);
                 
-                // Кнопки выбора темы в настройках
                 document.querySelectorAll('#themeSelector button').forEach(btn => {
                     btn.addEventListener('click', function() {
                         const mode = this.dataset.theme;
                         setThemeMode(mode);
                         showToast(`Тема: ${mode === 'light' ? 'Светлая' : mode === 'dark' ? 'Тёмная' : 'Системная'}`);
                     });
+                });
+                
+                // Добавление поездки
+                document.getElementById('addBtn').addEventListener('click', function() {
+                    const val = parseFloat(document.getElementById('tripInput').value);
+                    if (val && val > 0) {
+                        const data = loadActiveScooterData();
+                        if (data) {
+                            data.trips.push({ date: Date.now(), distance: val, type: 'trip' });
+                            data.totalTrips += val;
+                            saveActiveScooterData(data);
+                            renderAll();
+                            document.getElementById('tripInput').value = '';
+                            showToast(`➕ Добавлено ${val.toFixed(1)} км`);
+                        }
+                    } else {
+                        showToast('Введите число');
+                    }
+                });
+                
+                document.getElementById('tripInput').addEventListener('keydown', e => {
+                    if (e.key === 'Enter') document.getElementById('addBtn').click();
+                });
+                
+                document.getElementById('undoBtn').addEventListener('click', function() {
+                    const data = loadActiveScooterData();
+                    if (data && data.trips.length > 0) {
+                        const removed = data.trips.pop();
+                        if (removed.type === 'trip') data.totalTrips -= removed.distance;
+                        saveActiveScooterData(data);
+                        renderAll();
+                        showToast(`↩️ Отменено: ${removed.distance.toFixed(1)} км`);
+                    } else {
+                        showToast('Нет записей для отмены');
+                    }
+                });
+                
+                // Зарядка
+                const chargeSlider = document.getElementById('chargeAddSlider');
+                chargeSlider.addEventListener('input', function() {
+                    const data = loadActiveScooterData();
+                    updateChargeAddInfo(data);
+                });
+                
+                document.getElementById('chargeBtn').addEventListener('click', function() {
+                    const data = loadActiveScooterData();
+                    if (!data) return;
+                    const addPercent = parseInt(document.getElementById('chargeAddSlider').value);
+                    if (addPercent <= 0) {
+                        showToast('Выберите добавляемый процент (больше 0)');
+                        return;
+                    }
+                    const currentPercent = calcBattery(data).percent;
+                    let newPercent = Math.min(100, currentPercent + addPercent);
+                    if (newPercent === currentPercent) {
+                        showToast('Уже 100% заряда');
+                        return;
+                    }
+                    const activeTariffBtn = document.querySelector('#tariffSelector .active[data-tariff]');
+                    let tariffType = activeTariffBtn ? activeTariffBtn.dataset.tariff : 'night';
+                    let manualPrice = null;
+                    if (tariffType === 'other') {
+                        const priceInput = document.getElementById('tariffPriceInput');
+                        const val = parseFloat(priceInput.value);
+                        if (!isNaN(val) && val >= 0) manualPrice = val;
+                        else { showToast('Введите цену для тарифа "Другой"'); return; }
+                    }
+                    const modeInfo = getChargeModeAndTime(data);
+                    const cost = calcChargeCost(data, addPercent, tariffType, manualPrice, modeInfo.mode);
+                    const chargeId = 'charge_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+                    const prevOdometer = data.chargeOdometer;
+                    const prevPercent = data.chargePercent;
+                    
+                    data.chargeLog.push({
+                        id: chargeId,
+                        date: Date.now(),
+                        addedPercent: addPercent,
+                        newPercent: newPercent,
+                        tariffType: tariffType,
+                        pricePerKwh: tariffType === 'other' ? manualPrice : (tariffType === 'free' ? 0 : getTariffPrice(data, tariffType)),
+                        cost: cost,
+                        chargeMode: modeInfo.mode,
+                        prevOdometer: prevOdometer,
+                        prevPercent: prevPercent
+                    });
+                    data.chargePercent = newPercent;
+                    data.chargeOdometer = data.totalTrips;
+                    saveActiveScooterData(data);
+                    renderAll();
+                    document.getElementById('chargeAddSlider').value = 0;
+                    updateChargeAddInfo(data);
+                    showToast(`🔌 Заряд до ${newPercent}% (добавлено ${addPercent}%, стоимость ${cost.toFixed(2)} ₽)`);
+                });
+                
+                // Модалка времени
+                document.getElementById('timeModalOpenBtn').addEventListener('click', function() {
+                    const currentPercent = parseInt(document.getElementById('chargeAddSlider').value);
+                    const data = loadActiveScooterData();
+                    if (!data) return;
+                    const modeInfo = getChargeModeAndTime(data);
+                    const totalHours = (currentPercent / 100) * modeInfo.hours;
+                    document.getElementById('modalHours').value = Math.floor(totalHours);
+                    document.getElementById('modalMinutes').value = Math.round((totalHours - Math.floor(totalHours)) * 60);
+                    document.getElementById('timeModal').classList.add('open');
+                });
+                
+                document.getElementById('modalCancelBtn').addEventListener('click', function() {
+                    document.getElementById('timeModal').classList.remove('open');
+                });
+                
+                document.getElementById('modalApplyBtn').addEventListener('click', function() {
+                    const hours = parseInt(document.getElementById('modalHours').value) || 0;
+                    const minutes = parseInt(document.getElementById('modalMinutes').value) || 0;
+                    const totalMinutes = hours * 60 + minutes;
+                    if (totalMinutes <= 0) { showToast('Введите положительное время'); return; }
+                    const data = loadActiveScooterData();
+                    if (!data) return;
+                    const modeInfo = getChargeModeAndTime(data);
+                    const fullMinutes = modeInfo.hours * 60;
+                    let percent = Math.min(100, Math.round((totalMinutes / fullMinutes) * 100));
+                    if (percent < 1) percent = 1;
+                    document.getElementById('chargeAddSlider').value = percent;
+                    updateChargeAddInfo(data);
+                    document.getElementById('timeModal').classList.remove('open');
+                    showToast(`⏱ Установлено ${hours}ч ${minutes}мин → ${percent}%`);
+                });
+                
+                document.getElementById('timeModal').addEventListener('click', function(e) {
+                    if (e.target === this) this.classList.remove('open');
+                });
+                
+                // Добавление скутера
+                document.getElementById('addScooterBtn').addEventListener('click', function() {
+                    document.getElementById('addScooterModal').classList.add('open');
+                    document.getElementById('newScooterName').focus();
+                });
+                
+                document.getElementById('addScooterCancelBtn').addEventListener('click', function() {
+                    document.getElementById('addScooterModal').classList.remove('open');
+                    document.getElementById('newScooterName').value = '';
+                });
+                
+                document.getElementById('addScooterSaveBtn').addEventListener('click', function() {
+                    const name = document.getElementById('newScooterName').value.trim();
+                    if (!name) { showToast('Введите название'); return; }
+                    const store = loadAllScooters();
+                    const newScooter = { id: 'scooter_' + Date.now(), name: name, data: defaultScooterData() };
+                    store.scooters.push(newScooter);
+                    store.activeScooterId = newScooter.id;
+                    saveStore(store);
+                    renderAll();
+                    document.getElementById('addScooterModal').classList.remove('open');
+                    document.getElementById('newScooterName').value = '';
+                    showToast(`✅ Скутер "${name}" добавлен`);
+                });
+                
+                document.getElementById('newScooterName').addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter') document.getElementById('addScooterSaveBtn').click();
+                });
+                
+                // Сохранение настроек
+                [
+                    ['fullRangeSetting', 'fullRange'],
+                    ['batteryCapacity', 'batteryCapacity'],
+                    ['chargeEfficiencyNormal', 'chargeEfficiencyNormal'],
+                    ['chargeEfficiencyFast', 'chargeEfficiencyFast'],
+                    ['chargeHoursNormal', 'chargeHoursNormal'],
+                    ['chargeHoursFast', 'chargeHoursFast'],
+                    ['tariffNight', 'tariffNight'],
+                    ['tariffDay', 'tariffDay'],
+                    ['toIntervalSetting', 'toInterval']
+                ].forEach(([id, field]) => {
+                    document.getElementById(id).addEventListener('change', function() {
+                        let val = parseFloat(this.value);
+                        if (isNaN(val)) val = 0;
+                        const data = loadActiveScooterData();
+                        if (!data) return;
+                        data[field] = val;
+                        saveActiveScooterData(data);
+                        renderAll();
+                        showToast(`Настройка сохранена`);
+                    });
+                });
+                
+                // Заметки
+                document.getElementById('notesInput').addEventListener('input', function() {
+                    clearTimeout(window._notesTimer);
+                    window._notesTimer = setTimeout(() => {
+                        const data = loadActiveScooterData();
+                        if (!data) return;
+                        data.notes = this.value;
+                        saveActiveScooterData(data);
+                    }, 1000);
                 });
                 
                 console.log('✅ Приложение успешно инициализировано');
@@ -1755,7 +2427,7 @@
             }
         });
 
-        // Регистрация Service Worker
+        // ---- SERVICE WORKER ----
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/ScooterTracker/sw.js')
                 .then(reg => console.log('✅ Service Worker зарегистрирован', reg))
