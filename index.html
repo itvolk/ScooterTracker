@@ -49,6 +49,13 @@
             --toast-text: #0f172a;
             --modal-overlay: rgba(0,0,0,0.7);
         }
+        /* Плавный переход */
+        body {
+            transition: background 0.3s, color 0.3s;
+        }
+        .card, .tab-btn, .scooter-item, .stat-item, .battery-bar, .battery-fill, .btn, .charge-mode-toggle, .tariff-selector button, .charge-slider input[type="range"] {
+            transition: background 0.3s, border-color 0.3s, color 0.3s, box-shadow 0.3s;
+        }
         * {
             box-sizing: border-box;
             font-family: system-ui, -apple-system, sans-serif;
@@ -59,7 +66,6 @@
             padding: 12px;
             background: var(--bg);
             color: var(--text);
-            transition: background 0.25s, color 0.25s;
             min-height: 100vh;
         }
         .card {
@@ -68,7 +74,6 @@
             padding: 16px;
             box-shadow: var(--shadow);
             margin-bottom: 14px;
-            transition: background 0.25s;
         }
         .header {
             display: flex;
@@ -555,6 +560,39 @@
             min-height: 80px;
             resize: vertical;
         }
+        /* Стили для выбора темы */
+        .theme-selector {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0;
+        }
+        .theme-selector button {
+            flex: 1;
+            padding: 8px 4px;
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            background: var(--input-bg);
+            color: var(--text-secondary);
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+        .theme-selector button .theme-icon {
+            font-size: 24px;
+        }
+        .theme-selector button .theme-label {
+            font-size: 12px;
+        }
+        .theme-selector button.active {
+            border-color: var(--btn-primary);
+            background: var(--btn-primary);
+            color: white;
+        }
         .charge-slider {
             display: flex;
             align-items: center;
@@ -874,6 +912,16 @@
                 min-width: 80px;
                 font-size: 15px;
             }
+            .theme-selector button {
+                font-size: 15px;
+                padding: 12px 8px;
+            }
+            .theme-selector button .theme-icon {
+                font-size: 30px;
+            }
+            .theme-selector button .theme-label {
+                font-size: 14px;
+            }
         }
 
         @media screen and (min-width: 768px) {
@@ -905,6 +953,12 @@
             .tariff-selector button {
                 font-size: 11px;
                 padding: 4px 8px;
+            }
+            .theme-selector button .theme-icon {
+                font-size: 20px;
+            }
+            .theme-selector button .theme-label {
+                font-size: 10px;
             }
         }
     </style>
@@ -972,12 +1026,27 @@
         </div>
     </div>
 
-    <!-- Модалка редактирования зарядки -->
+    <!-- Модалка редактирования зарядки (расширенная) -->
     <div class="modal-overlay" id="editChargeModal">
         <div class="modal">
             <h2>✏️ Редактировать зарядку</h2>
-            <div class="input-row" style="flex-direction:column; gap:12px;">
-                <div style="width:100%;">
+            <div style="display:flex; flex-direction:column; gap:12px;">
+                <div>
+                    <label>Режим зарядки</label>
+                    <div class="charge-mode-toggle" id="editChargeModeToggle">
+                        <button data-mode="normal">🔋 Обычная</button>
+                        <button data-mode="fast">⚡ Быстрая</button>
+                    </div>
+                </div>
+                <div>
+                    <label>Добавлено %</label>
+                    <input type="number" id="editChargeAddedPercent" step="1" min="1" max="100" placeholder="Напр. 50">
+                </div>
+                <div>
+                    <label>Новый % (после зарядки)</label>
+                    <input type="number" id="editChargeNewPercent" step="1" min="1" max="100" placeholder="Напр. 100">
+                </div>
+                <div>
                     <label>Тариф</label>
                     <select id="editChargeTariffType">
                         <option value="night">Ночной</option>
@@ -986,7 +1055,7 @@
                         <option value="free">Бесплатно</option>
                     </select>
                 </div>
-                <div style="width:100%;" id="editChargePriceContainer">
+                <div id="editChargePriceContainer">
                     <label>Цена за кВт·ч (₽)</label>
                     <input type="number" id="editChargePricePerKwh" step="0.01" min="0" placeholder="Напр. 5.2">
                 </div>
@@ -1219,6 +1288,29 @@
         <div class="card">
             <h2 style="font-size:18px; margin:0 0 12px;">⚙️ Настройки активного скутера</h2>
             <div style="font-size:14px; color:var(--text-secondary); margin-bottom:12px;"><span id="settingsScooterName"></span></div>
+            
+            <!-- Новая секция выбора темы -->
+            <div class="settings-section-title">🎨 Оформление</div>
+            <div class="settings-group">
+                <label>Выберите тему</label>
+                <div class="theme-selector" id="themeSelector">
+                    <button data-theme="light" class="active">
+                        <span class="theme-icon">☀️</span>
+                        <span class="theme-label">Светлая</span>
+                    </button>
+                    <button data-theme="dark">
+                        <span class="theme-icon">🌙</span>
+                        <span class="theme-label">Тёмная</span>
+                    </button>
+                    <button data-theme="system">
+                        <span class="theme-icon">📱</span>
+                        <span class="theme-label">Системная</span>
+                    </button>
+                </div>
+                <div class="hint">«Системная» автоматически подстраивается под тему вашего устройства</div>
+            </div>
+            <hr style="border-color:var(--border); margin:16px 0;">
+
             <div class="settings-group">
                 <label for="fullRangeSetting">Полный запас хода (км)</label>
                 <input type="number" id="fullRangeSetting" step="0.5" min="1" placeholder="Напр. 60">
@@ -1308,8 +1400,14 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.1.6";
+        const APP_VERSION = "3.2.1";
         const RELEASE_NOTES = [
+            "🐛 Исправлена кнопка переключения темы в шапке (теперь работает корректно)",
+            "🐛 Исправлено определение системной темы — теперь точно соответствует настройкам устройства",
+            "🎨 Добавлен выбор темы: Светлая, Тёмная и Системная (автоматически подстраивается под систему)",
+            "🌓 Кнопка в шапке быстро переключает светлую/тёмную тему с учётом системного режима",
+            "🔄 Плавная анимация смены темы",
+            "✏️ В окне редактирования зарядки теперь можно менять не только тариф, но и режим зарядки (обычная/быстрая), добавленный процент и новый процент",
             "➕ Добавлена возможность ручного добавления зарядок через раздел «Расходы» (для восстановления статистики)",
             "📤 Добавлена кнопка «Отправить» — экспорт данных скутера в JSON через Web Share API",
             "📥 Добавлена кнопка «Загрузить» — импорт данных из JSON или CSV",
@@ -1380,6 +1478,9 @@
 
             const STORAGE_KEY = 'scooter_tracker_data_v3';
             let currentExpenseType = 'expense'; // 'expense' или 'charge'
+            let currentThemeMode = 'system'; // 'light', 'dark', 'system'
+            let darkModeMedia = null;
+            let isSystemDark = false;
 
             function defaultScooterData() {
                 return {
@@ -1482,6 +1583,10 @@
                             }],
                             activeScooterId: 'scooter_' + Date.now()
                         };
+                        // Переносим тему, если есть
+                        if (oldData.theme) {
+                            newStore.themeMode = oldData.theme === 'dark' ? 'dark' : 'light';
+                        }
                         localStorage.setItem(STORAGE_KEY, JSON.stringify(newStore));
                         localStorage.removeItem('scooter_tracker_data_v2');
                         return newStore;
@@ -1489,7 +1594,8 @@
                 } catch (e) { console.warn(e); }
                 const newStore = {
                     scooters: [{ id: 'scooter_' + Date.now(), name: 'Мой скутер', data: defaultScooterData() }],
-                    activeScooterId: null
+                    activeScooterId: null,
+                    themeMode: 'system' // по умолчанию системная
                 };
                 newStore.activeScooterId = newStore.scooters[0].id;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(newStore));
@@ -1517,6 +1623,70 @@
                 const scooter = store.scooters.find(s => s.id === id);
                 if (scooter) { scooter.data = data;
                     saveStore(store); }
+            }
+
+            // ---- Функции управления темой ----
+            function getSystemTheme() {
+                return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+            }
+
+            function applyTheme(mode) {
+                const isDark = mode === 'dark' || (mode === 'system' && getSystemTheme());
+                document.body.classList.toggle('dark', isDark);
+                const icon = document.getElementById('themeToggle');
+                icon.textContent = isDark ? '☀️' : '🌙';
+                // Обновляем активную кнопку в настройках
+                updateThemeUI(mode);
+                // Перерисовываем графики, если они видны
+                const data = loadActiveScooterData();
+                const statsTab = document.getElementById('stats-tab');
+                if (statsTab && statsTab.classList.contains('active')) renderStats(data);
+                const expTab = document.getElementById('expenses-tab');
+                if (expTab && expTab.classList.contains('active')) renderExpenses(data);
+            }
+
+            function updateThemeUI(mode) {
+                const buttons = document.querySelectorAll('#themeSelector button');
+                buttons.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.theme === mode);
+                });
+            }
+
+            function setThemeMode(mode) {
+                if (!['light', 'dark', 'system'].includes(mode)) return;
+                const store = loadAllScooters();
+                store.themeMode = mode;
+                saveStore(store);
+                currentThemeMode = mode;
+                applyTheme(mode);
+                // Подписка на системные изменения
+                if (mode === 'system') {
+                    if (!darkModeMedia) {
+                        darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+                        darkModeMedia.addEventListener('change', () => {
+                            if (currentThemeMode === 'system') applyTheme('system');
+                        });
+                    }
+                } else {
+                    if (darkModeMedia) {
+                        darkModeMedia.removeEventListener('change', () => {});
+                        darkModeMedia = null;
+                    }
+                }
+            }
+
+            // Исправленная функция переключения темы (без рекурсии)
+            function toggleTheme() {
+                // Если текущий режим 'system', переключаем на противоположный системному
+                let newMode;
+                if (currentThemeMode === 'system') {
+                    const sys = getSystemTheme();
+                    newMode = sys === 'dark' ? 'light' : 'dark';
+                } else {
+                    newMode = currentThemeMode === 'light' ? 'dark' : 'light';
+                }
+                setThemeMode(newMode);
+                showToast(`Тема: ${newMode === 'light' ? 'Светлая' : newMode === 'dark' ? 'Тёмная' : 'Системная'}`);
             }
 
             // ---- Вспомогательные функции ----
@@ -2737,10 +2907,26 @@
                     return;
                 }
                 editChargeId = id;
+                // Заполняем поля
+                document.getElementById('editChargeAddedPercent').value = charge.addedPercent;
+                document.getElementById('editChargeNewPercent').value = charge.newPercent;
+                const mode = charge.chargeMode || 'normal';
+                const modeBtns = document.querySelectorAll('#editChargeModeToggle button');
+                modeBtns.forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
                 document.getElementById('editChargeTariffType').value = charge.tariffType || 'night';
                 document.getElementById('editChargePricePerKwh').value = charge.pricePerKwh !== null ? charge.pricePerKwh : '';
                 document.getElementById('editChargeModal').classList.add('open');
                 updateEditChargePriceVisibility();
+            }
+
+            function setupEditChargeModeToggle() {
+                const buttons = document.querySelectorAll('#editChargeModeToggle button');
+                buttons.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        buttons.forEach(b => b.classList.remove('active'));
+                        this.classList.add('active');
+                    });
+                });
             }
 
             function updateEditChargePriceVisibility() {
@@ -2753,6 +2939,22 @@
                 if (!data) return;
                 const charge = data.chargeLog.find(c => c.id === editChargeId);
                 if (!charge) { showToast('Зарядка не найдена'); return; }
+
+                // Получаем значения
+                const addedPercent = parseInt(document.getElementById('editChargeAddedPercent').value);
+                const newPercent = parseInt(document.getElementById('editChargeNewPercent').value);
+                if (isNaN(addedPercent) || addedPercent <= 0 || isNaN(newPercent) || newPercent <= 0) {
+                    showToast('Введите корректные проценты');
+                    return;
+                }
+                if (newPercent < addedPercent) {
+                    showToast('Новый процент должен быть больше добавленного');
+                    return;
+                }
+
+                const activeModeBtn = document.querySelector('#editChargeModeToggle .active');
+                const chargeMode = activeModeBtn ? activeModeBtn.dataset.mode : 'normal';
+
                 const tariffType = document.getElementById('editChargeTariffType').value;
                 let pricePerKwh = null;
                 if (tariffType === 'other') {
@@ -2761,9 +2963,16 @@
                     else { showToast('Введите корректную цену'); return; }
                 } else if (tariffType === 'free') pricePerKwh = 0;
                 else pricePerKwh = getTariffPrice(data, tariffType);
+
+                // Обновляем зарядку
+                charge.addedPercent = addedPercent;
+                charge.newPercent = newPercent;
+                charge.chargeMode = chargeMode;
                 charge.tariffType = tariffType;
                 charge.pricePerKwh = pricePerKwh;
-                charge.cost = calcChargeCost(data, charge.addedPercent, tariffType, pricePerKwh, charge.chargeMode || 'normal');
+                // Пересчитываем стоимость
+                charge.cost = calcChargeCost(data, addedPercent, tariffType, pricePerKwh, chargeMode);
+
                 saveActiveScooterData(data);
                 document.getElementById('editChargeModal').classList.remove('open');
                 renderAll();
@@ -2961,37 +3170,39 @@
                 reader.readAsText(file);
             }
 
-            function toggleTheme() {
-                const body = document.body;
-                const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
-                body.classList.toggle('dark', newTheme === 'dark');
-                try {
-                    const store = loadAllScooters();
-                    store.theme = newTheme;
-                    saveStore(store);
-                } catch (e) {}
-                document.getElementById('themeToggle').textContent = newTheme === 'dark' ? '☀️' : '🌙';
-                const statsTab = document.getElementById('stats-tab');
-                if (statsTab && statsTab.classList.contains('active')) renderStats(loadActiveScooterData());
-                const expTab = document.getElementById('expenses-tab');
-                if (expTab && expTab.classList.contains('active')) renderExpenses(loadActiveScooterData());
-            }
-
             // ---- ИНИЦИАЛИЗАЦИЯ ----
             document.addEventListener('DOMContentLoaded', function() {
                 try {
                     checkForUpdates();
                     const store = loadAllScooters();
-                    if (store.theme === 'dark') {
-                        document.body.classList.add('dark');
-                        document.getElementById('themeToggle').textContent = '☀️';
-                    } else {
-                        document.getElementById('themeToggle').textContent = '🌙';
+                    
+                    // Загрузка темы
+                    let themeMode = store.themeMode || 'system';
+                    // Обратная совместимость: если есть поле theme (старое)
+                    if (!store.themeMode && store.theme) {
+                        themeMode = store.theme === 'dark' ? 'dark' : 'light';
+                        store.themeMode = themeMode;
+                        delete store.theme;
+                        saveStore(store);
                     }
+                    currentThemeMode = themeMode;
+                    // Применяем тему
+                    applyTheme(themeMode);
+                    // Обновляем UI в настройках
+                    updateThemeUI(themeMode);
+                    // Подписываемся на системные изменения, если нужно
+                    if (themeMode === 'system') {
+                        darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+                        darkModeMedia.addEventListener('change', () => {
+                            if (currentThemeMode === 'system') applyTheme('system');
+                        });
+                    }
+
                     populateCustomDateSelects();
                     updateDateSelectsVisibility();
                     setupTariffSelector();
                     setupChargeModeToggle();
+                    setupEditChargeModeToggle();
                     renderAll();
 
                     // Обработчики вкладок
@@ -2999,6 +3210,20 @@
                         btn.addEventListener('click', function() {
                             switchTab(this.dataset.tab);
                         });
+                    });
+
+                    // Обработчики выбора темы в настройках
+                    document.querySelectorAll('#themeSelector button').forEach(btn => {
+                        btn.addEventListener('click', function() {
+                            const mode = this.dataset.theme;
+                            setThemeMode(mode);
+                            showToast(`Тема: ${mode === 'light' ? 'Светлая' : mode === 'dark' ? 'Тёмная' : 'Системная'}`);
+                        });
+                    });
+
+                    // Кнопка переключения темы в шапке (исправлено)
+                    document.getElementById('themeToggle').addEventListener('click', function() {
+                        toggleTheme();
                     });
 
                     // Основные кнопки
@@ -3228,8 +3453,6 @@
                     document.getElementById('refreshExpensesBtn').addEventListener('click', function() {
                         renderExpenses(loadActiveScooterData());
                     });
-
-                    document.getElementById('themeToggle').addEventListener('click', toggleTheme);
 
                     // ===== НАВИГАЦИЯ СВАЙПАМИ =====
                     let touchStartX = 0;
