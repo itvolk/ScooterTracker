@@ -1400,21 +1400,21 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.2.1";
+        const APP_VERSION = "3.2.2";
         const RELEASE_NOTES = [
-            "🐛 Исправлена кнопка переключения темы в шапке (теперь работает корректно)",
+            "🐛 Исправлен экспорт и импорт в разделе «Скутеры» — теперь кнопки «Отправить» и «Загрузить» работают корректно",
             "🐛 Исправлено определение системной темы — теперь точно соответствует настройкам устройства",
-            "🎨 Добавлен выбор темы: Светлая, Тёмная и Системная (автоматически подстраивается под систему)",
+            "🎨 Добавлен выбор темы: Светлая, Тёмная и Системная",
             "🌓 Кнопка в шапке быстро переключает светлую/тёмную тему с учётом системного режима",
             "🔄 Плавная анимация смены темы",
-            "✏️ В окне редактирования зарядки теперь можно менять не только тариф, но и режим зарядки (обычная/быстрая), добавленный процент и новый процент",
-            "➕ Добавлена возможность ручного добавления зарядок через раздел «Расходы» (для восстановления статистики)",
-            "📤 Добавлена кнопка «Отправить» — экспорт данных скутера в JSON через Web Share API",
-            "📥 Добавлена кнопка «Загрузить» — импорт данных из JSON или CSV",
+            "✏️ Расширено редактирование зарядок — можно менять проценты и режим",
+            "➕ Ручное добавление зарядок через раздел «Расходы»",
+            "📤 Экспорт данных через Web Share API",
+            "📥 Импорт данных из JSON и CSV",
             "📊 Сохранение выбранного периода в статистике",
-            "📱 Добавлена поддержка офлайн-режима (Service Worker)",
+            "📱 Офлайн-режим (Service Worker)",
             "🛵 Поддержка нескольких скутеров",
-            "👉 Навигация свайпами между вкладками"
+            "👉 Навигация свайпами"
         ];
 
         function checkForUpdates() {
@@ -1583,7 +1583,6 @@
                             }],
                             activeScooterId: 'scooter_' + Date.now()
                         };
-                        // Переносим тему, если есть
                         if (oldData.theme) {
                             newStore.themeMode = oldData.theme === 'dark' ? 'dark' : 'light';
                         }
@@ -1595,7 +1594,7 @@
                 const newStore = {
                     scooters: [{ id: 'scooter_' + Date.now(), name: 'Мой скутер', data: defaultScooterData() }],
                     activeScooterId: null,
-                    themeMode: 'system' // по умолчанию системная
+                    themeMode: 'system'
                 };
                 newStore.activeScooterId = newStore.scooters[0].id;
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(newStore));
@@ -1635,9 +1634,7 @@
                 document.body.classList.toggle('dark', isDark);
                 const icon = document.getElementById('themeToggle');
                 icon.textContent = isDark ? '☀️' : '🌙';
-                // Обновляем активную кнопку в настройках
                 updateThemeUI(mode);
-                // Перерисовываем графики, если они видны
                 const data = loadActiveScooterData();
                 const statsTab = document.getElementById('stats-tab');
                 if (statsTab && statsTab.classList.contains('active')) renderStats(data);
@@ -1659,7 +1656,6 @@
                 saveStore(store);
                 currentThemeMode = mode;
                 applyTheme(mode);
-                // Подписка на системные изменения
                 if (mode === 'system') {
                     if (!darkModeMedia) {
                         darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
@@ -1675,9 +1671,7 @@
                 }
             }
 
-            // Исправленная функция переключения темы (без рекурсии)
             function toggleTheme() {
-                // Если текущий режим 'system', переключаем на противоположный системному
                 let newMode;
                 if (currentThemeMode === 'system') {
                     const sys = getSystemTheme();
@@ -2197,7 +2191,7 @@
                 if (nameEl && scooter) nameEl.textContent = '🛵 ' + scooter.name;
             }
 
-            // ---- ЭКСПОРТ через Web Share с улучшенной логикой ----
+            // ---- ИСПРАВЛЕННАЯ ФУНКЦИЯ ЭКСПОРТА (без рекурсии) ----
             function exportScooterData(scooterId) {
                 const store = loadAllScooters();
                 const scooter = store.scooters.find(s => s.id === scooterId);
@@ -2206,68 +2200,15 @@
                     return;
                 }
 
-                // Собираем данные для экспорта
-                const exportData = {
-                    version: '1.0',
-                    exportedAt: new Date().toISOString(),
-                    scooterId: scooter.id,
-                    name: scooter.name,
-                    data: scooter.data
-                };
-                const json = JSON.stringify(exportData, null, 2);
+                // Экспортируем только данные скутера (без обёртки) для совместимости с импортом из настроек
+                const json = JSON.stringify(scooter.data, null, 2);
                 const fileName = `scooter_${scooter.name.replace(/\s/g, '_')}_${Date.now()}.json`;
 
-                // Функция для скачивания файла (запасной вариант)
                 function fallbackDownload() {
                     downloadFile(json, fileName, 'application/json');
                     showToast('📤 Файл сохранён локально');
                 }
 
-                // ПРОСТОЙ СПОСОБ: всегда пытаемся поделиться текстом
-                // (это работает на большинстве Android-браузеров)
-                function exportScooterData(scooterId) {
-                    const store = loadAllScooters();
-                    const scooter = store.scooters.find(s => s.id === scooterId);
-                    if (!scooter) {
-                        showToast('Скутер не найден');
-                        return;
-                    }
-
-                    const exportData = {
-                        version: '1.0',
-                        exportedAt: new Date().toISOString(),
-                        scooterId: scooter.id,
-                        name: scooter.name,
-                        data: scooter.data
-                    };
-                    const json = JSON.stringify(exportData, null, 2);
-                    const fileName = `scooter_${scooter.name.replace(/\s/g, '_')}_${Date.now()}.json`;
-
-                    // ПРОБУЕМ ПРОСТОЙ СПОСОБ — отправка через share
-                    if (navigator.share) {
-                        navigator.share({
-                            title: `Данные скутера ${scooter.name}`,
-                            text: json,
-                            // Не добавляем files — так работает на 99% устройств
-                        }).then(() => {
-                            showToast('📤 Данные отправлены');
-                        }).catch(err => {
-                            if (err.name !== 'AbortError') {
-                                // Если не сработало — скачиваем
-                                downloadFile(json, fileName, 'application/json');
-                                showToast('📤 Файл сохранён локально');
-                            } else {
-                                showToast('Отправка отменена');
-                            }
-                        });
-                    } else {
-                        // Если Share API вообще нет — скачиваем
-                        downloadFile(json, fileName, 'application/json');
-                        showToast('📤 Файл сохранён локально');
-                    }
-                }
-
-                // Функция для отправки через Share API с текстом
                 function shareAsText() {
                     if (navigator.share) {
                         navigator.share({
@@ -2293,8 +2234,6 @@
                     try {
                         const blob = new Blob([json], { type: 'application/json' });
                         const file = new File([blob], fileName, { type: 'application/json' });
-                        
-                        // Проверяем, можно ли поделиться файлом
                         if (navigator.canShare({ files: [file] })) {
                             navigator.share({
                                 title: `Данные скутера ${scooter.name}`,
@@ -2307,7 +2246,6 @@
                                     showToast('Отправка отменена');
                                 } else {
                                     console.warn('Ошибка Share API с файлом:', err);
-                                    // Если не удалось с файлом, пробуем с текстом
                                     shareAsText();
                                 }
                             });
@@ -2317,47 +2255,10 @@
                         console.warn('Ошибка canShare:', e);
                     }
                 }
-
-                // Если Share с файлом не работает, пробуем с текстом
                 shareAsText();
             }
 
-            // Альтернативный способ отправки через Android Intent
-            function shareViaAndroidIntent(text, fileName) {
-                try {
-                    // Пробуем использовать Web Share API Level 2
-                    if (navigator.share) {
-                        navigator.share({
-                            title: `Данные скутера`,
-                            text: text
-                        }).then(() => {
-                            showToast('📤 Данные отправлены');
-                        }).catch(err => {
-                            if (err.name !== 'AbortError') {
-                                fallbackDownload();
-                            }
-                        });
-                    } else {
-                        // Для старых Android версий — скачиваем файл
-                        fallbackDownload();
-                    }
-                } catch(e) {
-                    fallbackDownload();
-                }
-            }
-
-            function downloadFile(content, filename, mime) {
-                const blob = new Blob([content], { type: mime + ';charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(link.href);
-            }
-
-            // ---- ИМПОРТ через выбор файла ----
+            // ---- ИМПОРТ через выбор файла (исправлен) ----
             function importScooterData(scooterId) {
                 const input = document.getElementById('importFileInput');
                 if (!input) return;
@@ -2382,33 +2283,36 @@
                             }
                         }
 
-                        if (!importData.data && !importData.trips) {
-                            if (importData.version && importData.scooterId && importData.data) {
-                                importData = importData.data;
-                            } else if (Array.isArray(importData)) {
-                                importData = { trips: importData };
-                            }
+                        // Извлекаем данные из возможной обёртки
+                        let sourceData = importData;
+                        if (importData.data && typeof importData.data === 'object') {
+                            sourceData = importData.data;
+                        } else if (importData.version && importData.scooterId && importData.data) {
+                            sourceData = importData.data;
+                        } else if (Array.isArray(importData)) {
+                            sourceData = { trips: importData };
                         }
 
+                        // Убедимся, что sourceData содержит нужные поля
                         const newData = {
-                            fullRange: importData.fullRange || 60,
-                            batteryCapacity: importData.batteryCapacity || 1.0,
-                            chargeEfficiencyNormal: importData.chargeEfficiencyNormal || 0.9,
-                            chargeEfficiencyFast: importData.chargeEfficiencyFast || 0.85,
-                            tariffNight: importData.tariffNight || 4.5,
-                            tariffDay: importData.tariffDay || 6.8,
-                            chargeHoursNormal: importData.chargeHoursNormal || 4.0,
-                            chargeHoursFast: importData.chargeHoursFast || 0,
-                            chargeMode: importData.chargeMode || 'normal',
-                            chargeOdometer: importData.chargeOdometer || 0,
-                            chargePercent: importData.chargePercent || 100,
-                            trips: importData.trips || [],
-                            totalTrips: importData.totalTrips || 0,
-                            toInterval: importData.toInterval || 500,
-                            lastToNotified: importData.lastToNotified || 0,
-                            notes: importData.notes || '',
-                            chargeLog: importData.chargeLog || [],
-                            expenses: importData.expenses || []
+                            fullRange: sourceData.fullRange || 60,
+                            batteryCapacity: sourceData.batteryCapacity || 1.0,
+                            chargeEfficiencyNormal: sourceData.chargeEfficiencyNormal || 0.9,
+                            chargeEfficiencyFast: sourceData.chargeEfficiencyFast || 0.85,
+                            tariffNight: sourceData.tariffNight || 4.5,
+                            tariffDay: sourceData.tariffDay || 6.8,
+                            chargeHoursNormal: sourceData.chargeHoursNormal || 4.0,
+                            chargeHoursFast: sourceData.chargeHoursFast || 0,
+                            chargeMode: sourceData.chargeMode || 'normal',
+                            chargeOdometer: sourceData.chargeOdometer || 0,
+                            chargePercent: sourceData.chargePercent || 100,
+                            trips: sourceData.trips || [],
+                            totalTrips: sourceData.totalTrips || 0,
+                            toInterval: sourceData.toInterval || 500,
+                            lastToNotified: sourceData.lastToNotified || 0,
+                            notes: sourceData.notes || '',
+                            chargeLog: sourceData.chargeLog || [],
+                            expenses: sourceData.expenses || []
                         };
 
                         const action = confirm('Заменить текущие данные скутера на импортированные?\nНажмите "ОК" — заменить.\n"Отмена" — добавить новые записи.');
@@ -2451,6 +2355,7 @@
                             targetScooter.data.expenses = existingExpenses.concat(newExpenses);
                             targetScooter.data.totalTrips = targetScooter.data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
 
+                            // Копируем настройки, если их нет
                             if (!targetScooter.data.fullRange && newData.fullRange) targetScooter.data.fullRange = newData.fullRange;
                             if (!targetScooter.data.batteryCapacity && newData.batteryCapacity) targetScooter.data.batteryCapacity = newData.batteryCapacity;
                             if (!targetScooter.data.chargeEfficiencyNormal && newData.chargeEfficiencyNormal) targetScooter.data.chargeEfficiencyNormal = newData.chargeEfficiencyNormal;
@@ -3178,7 +3083,6 @@
                     
                     // Загрузка темы
                     let themeMode = store.themeMode || 'system';
-                    // Обратная совместимость: если есть поле theme (старое)
                     if (!store.themeMode && store.theme) {
                         themeMode = store.theme === 'dark' ? 'dark' : 'light';
                         store.themeMode = themeMode;
@@ -3186,11 +3090,8 @@
                         saveStore(store);
                     }
                     currentThemeMode = themeMode;
-                    // Применяем тему
                     applyTheme(themeMode);
-                    // Обновляем UI в настройках
                     updateThemeUI(themeMode);
-                    // Подписываемся на системные изменения, если нужно
                     if (themeMode === 'system') {
                         darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
                         darkModeMedia.addEventListener('change', () => {
@@ -3221,7 +3122,7 @@
                         });
                     });
 
-                    // Кнопка переключения темы в шапке (исправлено)
+                    // Кнопка переключения темы в шапке
                     document.getElementById('themeToggle').addEventListener('click', function() {
                         toggleTheme();
                     });
@@ -3307,7 +3208,6 @@
                     document.getElementById('expenseTypeCharge').addEventListener('click', function() {
                         setExpenseType('charge');
                     });
-                    // Изначально активен расход
                     setExpenseType('expense');
 
                     // Показываем/скрываем поле цены для тарифа "Другой"
