@@ -1641,53 +1641,106 @@
                 const icon = document.getElementById('themeToggle');
                 icon.textContent = isDark ? '☀️' : '🌙';
                 updateThemeUI(mode);
+                
+                console.log('🎨 Применена тема:', isDark ? 'тёмная' : 'светлая');
+                
+                // Принудительная перерисовка для HyperOS
+                document.body.style.transform = 'scale(0.999)';
+                requestAnimationFrame(() => {
+                    document.body.style.transform = 'scale(1)';
+                });
+                
+                // Перерисовываем все видимые данные
                 const data = loadActiveScooterData();
+                renderMain(data);
+                renderSettings(data);
+                renderScootersList();
                 const statsTab = document.getElementById('stats-tab');
                 if (statsTab && statsTab.classList.contains('active')) renderStats(data);
                 const expTab = document.getElementById('expenses-tab');
                 if (expTab && expTab.classList.contains('active')) renderExpenses(data);
+                
+                window._lastAppliedTheme = isDark ? 'dark' : 'light';
             }
 
-            function updateThemeUI(mode) {
-                const buttons = document.querySelectorAll('#themeSelector button');
-                buttons.forEach(btn => {
-                    btn.classList.toggle('active', btn.dataset.theme === mode);
+            function setupThemeSync() {
+                let lastAppliedTheme = null;
+                const darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
+                
+                function handleThemeChange() {
+                    if (currentThemeMode === 'system') {
+                        const newTheme = darkModeMedia.matches ? 'dark' : 'light';
+                        if (newTheme !== lastAppliedTheme) {
+                            lastAppliedTheme = newTheme;
+                            console.log('🌓 Смена темы:', newTheme);
+                            applyTheme('system');
+                        }
+                    }
+                }
+                
+                // 1. Событие изменения системной темы
+                darkModeMedia.addEventListener('change', handleThemeChange);
+                
+                // 2. Видимость вкладки
+                document.addEventListener('visibilitychange', function() {
+                    if (!document.hidden && currentThemeMode === 'system') {
+                        console.log('👁️ Вкладка активна, проверка темы');
+                        handleThemeChange();
+                    }
                 });
+                
+                // 3. Фокус окна
+                window.addEventListener('focus', function() {
+                    if (currentThemeMode === 'system') {
+                        console.log('🎯 Фокус, проверка темы');
+                        handleThemeChange();
+                    }
+                });
+                
+                // 4. MutationObserver
+                const observer = new MutationObserver(function() {
+                    if (currentThemeMode === 'system') {
+                        const expected = darkModeMedia.matches;
+                        const actual = document.body.classList.contains('dark');
+                        if (expected !== actual) {
+                            console.log('🔧 MutationObserver: исправление рассинхрона');
+                            applyTheme('system');
+                        }
+                    }
+                });
+                observer.observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['class', 'data-theme']
+                });
+                observer.observe(document.body, {
+                    attributes: true,
+                    attributeFilter: ['class']
+                });
+                
+                // 5. Поллинг каждые 500 мс
+                let lastCheck = null;
+                const interval = setInterval(function() {
+                    if (currentThemeMode === 'system') {
+                        const current = darkModeMedia.matches ? 'dark' : 'light';
+                        if (current !== lastCheck) {
+                            lastCheck = current;
+                            console.log('⏱️ Поллинг:', current);
+                            applyTheme('system');
+                        }
+                    }
+                }, 500);
+                
+                window._themeInterval = interval;
+                window._themeObserver = observer;
+                
+                // Инициализация
+                lastAppliedTheme = darkModeMedia.matches ? 'dark' : 'light';
+                lastCheck = lastAppliedTheme;
+                console.log('✅ Синхронизация темы настроена');
             }
 
-            function setThemeMode(mode) {
-                if (!['light', 'dark', 'system'].includes(mode)) return;
-                const store = loadAllScooters();
-                store.themeMode = mode;
-                saveStore(store);
-                currentThemeMode = mode;
-                applyTheme(mode);
-                if (mode === 'system') {
-                    if (!darkModeMedia) {
-                        darkModeMedia = window.matchMedia('(prefers-color-scheme: dark)');
-                        darkModeMedia.addEventListener('change', () => {
-                            if (currentThemeMode === 'system') applyTheme('system');
-                        });
-                    }
-                } else {
-                    if (darkModeMedia) {
-                        darkModeMedia.removeEventListener('change', () => {});
-                        darkModeMedia = null;
-                    }
-                }
-            }
-
-            function toggleTheme() {
-                let newMode;
-                if (currentThemeMode === 'system') {
-                    const sys = getSystemTheme();
-                    newMode = sys === 'dark' ? 'light' : 'dark';
-                } else {
-                    newMode = currentThemeMode === 'light' ? 'dark' : 'light';
-                }
-                setThemeMode(newMode);
-                showToast(`Тема: ${newMode === 'light' ? 'Светлая' : newMode === 'dark' ? 'Тёмная' : 'Системная'}`);
-            }
+            // Вызов в DOMContentLoaded после загрузки темы
+            setupThemeSync();
 
             // ---- Вспомогательные функции ----
             function calcTotal(trips) { return trips.reduce((s, t) => s + t.distance, 0); }
