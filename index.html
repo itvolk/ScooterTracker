@@ -1400,20 +1400,19 @@
 
     <script>
         // ======================== ВЕРСИЯ И УВЕДОМЛЕНИЕ ========================
-        const APP_VERSION = "3.2.2";
+        const APP_VERSION = "3.2.5";
         const RELEASE_NOTES = [
-            "🐛 Исправлен экспорт и импорт в разделе «Скутеры» — теперь кнопки «Отправить» и «Загрузить» работают корректно",
-            "🐛 Исправлено определение системной темы — теперь точно соответствует настройкам устройства",
-            "🎨 Добавлен выбор темы: Светлая, Тёмная и Системная",
-            "🌓 Кнопка в шапке быстро переключает светлую/тёмную тему с учётом системного режима",
+            "🐛 Исправлена ошибка 'downloadfile is not defined' — функция переименована и вынесена на верхний уровень",
+            "📤 Экспорт в разделе «Скутеры» теперь всегда скачивает файл и дополнительно предлагает поделиться через Share API",
+            "🎨 Выбор темы: Светлая, Тёмная, Системная",
+            "🌓 Быстрое переключение темы кнопкой в шапке",
             "🔄 Плавная анимация смены темы",
-            "✏️ Расширено редактирование зарядок — можно менять проценты и режим",
-            "➕ Ручное добавление зарядок через раздел «Расходы»",
-            "📤 Экспорт данных через Web Share API",
-            "📥 Импорт данных из JSON и CSV",
-            "📊 Сохранение выбранного периода в статистике",
+            "✏️ Расширено редактирование зарядок (проценты, режим)",
+            "➕ Ручное добавление зарядок через «Расходы»",
+            "📥 Импорт из JSON и CSV",
+            "📊 Сохранение периода в статистике",
             "📱 Офлайн-режим (Service Worker)",
-            "🛵 Поддержка нескольких скутеров",
+            "🛵 Несколько скутеров",
             "👉 Навигация свайпами"
         ];
 
@@ -1455,14 +1454,10 @@
                 navigator.serviceWorker.register('/ScooterTracker/sw.js')
                     .then(reg => {
                         console.log('Service Worker зарегистрирован', reg);
-                        
-                        // Проверяем обновления каждые 30 секунд
                         setInterval(() => {
                             reg.update();
                             console.log('Проверка обновлений...');
                         }, 30000);
-                        
-                        // Следим за новым SW и перезагружаем страницу
                         reg.addEventListener('updatefound', () => {
                             const newSW = reg.installing;
                             newSW.addEventListener('statechange', () => {
@@ -1477,10 +1472,21 @@
             }
 
             const STORAGE_KEY = 'scooter_tracker_data_v3';
-            let currentExpenseType = 'expense'; // 'expense' или 'charge'
-            let currentThemeMode = 'system'; // 'light', 'dark', 'system'
+            let currentExpenseType = 'expense';
+            let currentThemeMode = 'system';
             let darkModeMedia = null;
-            let isSystemDark = false;
+
+            // ---- ГЛОБАЛЬНАЯ ФУНКЦИЯ СКАЧИВАНИЯ (вынесена наверх) ----
+            function downloadFile(content, filename, mime) {
+                const blob = new Blob([content], { type: mime + ';charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(link.href);
+            }
 
             function defaultScooterData() {
                 return {
@@ -1744,7 +1750,6 @@
                 toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
             }
 
-            // ---- Обновление заголовка ----
             function updateAppTitle(name) {
                 const titleEl = document.getElementById('appTitle');
                 if (titleEl) titleEl.innerHTML = `🛵 ${name}`;
@@ -1868,7 +1873,6 @@
                     }
 
                     const tripCount = tripEntries.length;
-
                     const dayMap = new Map();
                     tripEntries.forEach(t => {
                         const d = new Date(t.date);
@@ -2191,74 +2195,54 @@
                 if (nameEl && scooter) nameEl.textContent = '🛵 ' + scooter.name;
             }
 
-            // ---- ИСПРАВЛЕННАЯ ФУНКЦИЯ ЭКСПОРТА (без рекурсии) ----
+            // ---- ИСПРАВЛЕННАЯ ФУНКЦИЯ ЭКСПОРТА ----
             function exportScooterData(scooterId) {
-                const store = loadAllScooters();
-                const scooter = store.scooters.find(s => s.id === scooterId);
-                if (!scooter) {
-                    showToast('Скутер не найден');
-                    return;
-                }
-
-                // Экспортируем только данные скутера (без обёртки) для совместимости с импортом из настроек
-                const json = JSON.stringify(scooter.data, null, 2);
-                const fileName = `scooter_${scooter.name.replace(/\s/g, '_')}_${Date.now()}.json`;
-
-                function fallbackDownload() {
-                    downloadFile(json, fileName, 'application/json');
-                    showToast('📤 Файл сохранён локально');
-                }
-
-                function shareAsText() {
-                    if (navigator.share) {
-                        navigator.share({
-                            title: `Данные скутера ${scooter.name}`,
-                            text: `Данные скутера "${scooter.name}" (${new Date().toLocaleDateString()}):\n\n${json.substring(0, 500)}...\n\n(файл: ${fileName})`
-                        }).then(() => {
-                            showToast('📤 Данные отправлены');
-                        }).catch(err => {
-                            if (err.name !== 'AbortError') {
-                                console.warn('Ошибка Share API:', err);
-                                fallbackDownload();
-                            } else {
-                                showToast('Отправка отменена');
-                            }
-                        });
-                    } else {
-                        fallbackDownload();
+                try {
+                    const store = loadAllScooters();
+                    const scooter = store.scooters.find(s => s.id === scooterId);
+                    if (!scooter) {
+                        showToast('Скутер не найден');
+                        return;
                     }
-                }
+                    const json = JSON.stringify(scooter.data, null, 2);
+                    const fileName = `scooter_${scooter.name.replace(/\s/g, '_')}_${Date.now()}.json`;
 
-                // Пробуем поделиться файлом
-                if (navigator.share && navigator.canShare) {
-                    try {
+                    // Всегда скачиваем файл
+                    downloadFile(json, fileName, 'application/json');
+                    showToast('📤 Файл экспортирован');
+
+                    // Дополнительно пробуем поделиться через Share API
+                    if (navigator.share) {
                         const blob = new Blob([json], { type: 'application/json' });
                         const file = new File([blob], fileName, { type: 'application/json' });
-                        if (navigator.canShare({ files: [file] })) {
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
                             navigator.share({
                                 title: `Данные скутера ${scooter.name}`,
                                 text: `Экспорт данных скутера ${scooter.name} от ${new Date().toLocaleDateString()}`,
                                 files: [file]
-                            }).then(() => {
-                                showToast('📤 Данные отправлены');
                             }).catch(err => {
-                                if (err.name === 'AbortError') {
-                                    showToast('Отправка отменена');
-                                } else {
-                                    console.warn('Ошибка Share API с файлом:', err);
-                                    shareAsText();
+                                if (err.name !== 'AbortError') {
+                                    console.warn('Ошибка Share API (файл):', err);
                                 }
                             });
-                            return;
+                        } else {
+                            navigator.share({
+                                title: `Данные скутера ${scooter.name}`,
+                                text: json.substring(0, 500) + '...\n\n(файл: ' + fileName + ')'
+                            }).catch(err => {
+                                if (err.name !== 'AbortError') {
+                                    console.warn('Ошибка Share API (текст):', err);
+                                }
+                            });
                         }
-                    } catch(e) {
-                        console.warn('Ошибка canShare:', e);
                     }
+                } catch (err) {
+                    console.error('Ошибка экспорта:', err);
+                    showToast('❌ Ошибка при экспорте: ' + err.message);
                 }
-                shareAsText();
             }
 
-            // ---- ИМПОРТ через выбор файла (исправлен) ----
+            // ---- ИМПОРТ через выбор файла ----
             function importScooterData(scooterId) {
                 const input = document.getElementById('importFileInput');
                 if (!input) return;
@@ -2283,7 +2267,6 @@
                             }
                         }
 
-                        // Извлекаем данные из возможной обёртки
                         let sourceData = importData;
                         if (importData.data && typeof importData.data === 'object') {
                             sourceData = importData.data;
@@ -2293,7 +2276,6 @@
                             sourceData = { trips: importData };
                         }
 
-                        // Убедимся, что sourceData содержит нужные поля
                         const newData = {
                             fullRange: sourceData.fullRange || 60,
                             batteryCapacity: sourceData.batteryCapacity || 1.0,
@@ -2355,7 +2337,6 @@
                             targetScooter.data.expenses = existingExpenses.concat(newExpenses);
                             targetScooter.data.totalTrips = targetScooter.data.trips.reduce((sum, t) => t.type === 'trip' ? sum + t.distance : sum, 0);
 
-                            // Копируем настройки, если их нет
                             if (!targetScooter.data.fullRange && newData.fullRange) targetScooter.data.fullRange = newData.fullRange;
                             if (!targetScooter.data.batteryCapacity && newData.batteryCapacity) targetScooter.data.batteryCapacity = newData.batteryCapacity;
                             if (!targetScooter.data.chargeEfficiencyNormal && newData.chargeEfficiencyNormal) targetScooter.data.chargeEfficiencyNormal = newData.chargeEfficiencyNormal;
@@ -2424,7 +2405,7 @@
                 return result;
             }
 
-            // ---- РУЧНОЕ ДОБАВЛЕНИЕ ЗАРЯДКИ (без изменения состояния) ----
+            // ---- РУЧНОЕ ДОБАВЛЕНИЕ ЗАРЯДКИ ----
             function addManualCharge() {
                 const data = loadActiveScooterData();
                 if (!data) return;
@@ -2480,8 +2461,6 @@
                 });
 
                 saveActiveScooterData(data);
-                
-                // ---- ОЧИЩАЕМ ФОРМУ ----
                 document.getElementById('manualChargePercent').value = '';
                 document.getElementById('manualChargeNewPercent').value = '';
                 document.getElementById('manualChargePrice').value = '';
@@ -2489,7 +2468,6 @@
                 document.getElementById('manualChargeTariff').value = 'night';
                 document.getElementById('manualChargeMode').value = 'normal';
                 document.getElementById('manualChargePriceContainer').style.display = 'none';
-                
                 renderAll();
                 showToast(`🔋 Зарядка добавлена (${addedPercent}%, стоимость ${cost.toFixed(2)} ₽)`);
             }
@@ -2527,7 +2505,6 @@
                 document.getElementById('chargeForm').style.display = (type === 'charge') ? 'block' : 'none';
                 document.getElementById('expenseTypeExpense').classList.toggle('active', type === 'expense');
                 document.getElementById('expenseTypeCharge').classList.toggle('active', type === 'charge');
-                // Обновляем заголовок
                 document.querySelector('#addExpenseModal h2').textContent = type === 'expense' ? '➕ Добавить расход' : '🔋 Добавить зарядку';
             }
 
@@ -2812,7 +2789,6 @@
                     return;
                 }
                 editChargeId = id;
-                // Заполняем поля
                 document.getElementById('editChargeAddedPercent').value = charge.addedPercent;
                 document.getElementById('editChargeNewPercent').value = charge.newPercent;
                 const mode = charge.chargeMode || 'normal';
@@ -2845,7 +2821,6 @@
                 const charge = data.chargeLog.find(c => c.id === editChargeId);
                 if (!charge) { showToast('Зарядка не найдена'); return; }
 
-                // Получаем значения
                 const addedPercent = parseInt(document.getElementById('editChargeAddedPercent').value);
                 const newPercent = parseInt(document.getElementById('editChargeNewPercent').value);
                 if (isNaN(addedPercent) || addedPercent <= 0 || isNaN(newPercent) || newPercent <= 0) {
@@ -2869,13 +2844,11 @@
                 } else if (tariffType === 'free') pricePerKwh = 0;
                 else pricePerKwh = getTariffPrice(data, tariffType);
 
-                // Обновляем зарядку
                 charge.addedPercent = addedPercent;
                 charge.newPercent = newPercent;
                 charge.chargeMode = chargeMode;
                 charge.tariffType = tariffType;
                 charge.pricePerKwh = pricePerKwh;
-                // Пересчитываем стоимость
                 charge.cost = calcChargeCost(data, addedPercent, tariffType, pricePerKwh, chargeMode);
 
                 saveActiveScooterData(data);
@@ -2884,16 +2857,14 @@
                 showToast('✅ Зарядка обновлена');
             }
 
-            // ---- ОБНОВЛЁННАЯ функция добавления расхода (с поддержкой двух типов) ----
+            // ---- ОБНОВЛЁННАЯ функция добавления расхода ----
             function openAddExpenseModal() {
-                // Сбрасываем форму
                 document.getElementById('expenseAmount').value = '';
                 document.getElementById('expenseDescription').value = '';
                 document.getElementById('manualChargePercent').value = '';
                 document.getElementById('manualChargeNewPercent').value = '';
                 document.getElementById('manualChargePrice').value = '';
                 document.getElementById('manualChargeDate').value = '';
-                // По умолчанию показываем расход
                 setExpenseType('expense');
                 document.getElementById('addExpenseModal').classList.add('open');
             }
@@ -3081,7 +3052,6 @@
                     checkForUpdates();
                     const store = loadAllScooters();
                     
-                    // Загрузка темы
                     let themeMode = store.themeMode || 'system';
                     if (!store.themeMode && store.theme) {
                         themeMode = store.theme === 'dark' ? 'dark' : 'light';
@@ -3106,14 +3076,12 @@
                     setupEditChargeModeToggle();
                     renderAll();
 
-                    // Обработчики вкладок
                     document.querySelectorAll('.tab-btn').forEach(btn => {
                         btn.addEventListener('click', function() {
                             switchTab(this.dataset.tab);
                         });
                     });
 
-                    // Обработчики выбора темы в настройках
                     document.querySelectorAll('#themeSelector button').forEach(btn => {
                         btn.addEventListener('click', function() {
                             const mode = this.dataset.theme;
@@ -3122,12 +3090,10 @@
                         });
                     });
 
-                    // Кнопка переключения темы в шапке
                     document.getElementById('themeToggle').addEventListener('click', function() {
                         toggleTheme();
                     });
 
-                    // Основные кнопки
                     document.getElementById('addBtn').addEventListener('click', function() {
                         const val = parseFloat(document.getElementById('tripInput').value);
                         if (!isNaN(val)) addTrip(val);
@@ -3145,7 +3111,6 @@
                     });
                     document.getElementById('chargeBtn').addEventListener('click', chargeAdd);
 
-                    // Модалка времени зарядки
                     const timeModal = document.getElementById('timeModal');
                     document.getElementById('timeModalOpenBtn').addEventListener('click', function() {
                         const currentPercent = parseInt(document.getElementById('chargeAddSlider').value);
@@ -3180,7 +3145,6 @@
                         if (e.target === this) timeModal.classList.remove('open');
                     });
 
-                    // Модалка редактирования зарядки
                     const editChargeModal = document.getElementById('editChargeModal');
                     document.getElementById('editChargeCancelBtn').addEventListener('click', function() {
                         editChargeModal.classList.remove('open');
@@ -3191,7 +3155,6 @@
                         if (e.target === this) editChargeModal.classList.remove('open');
                     });
 
-                    // Модалка добавления записи (расход/зарядка)
                     document.getElementById('addExpenseBtn').addEventListener('click', openAddExpenseModal);
                     document.getElementById('addExpenseCancelBtn').addEventListener('click', function() {
                         document.getElementById('addExpenseModal').classList.remove('open');
@@ -3201,7 +3164,6 @@
                         if (e.target === this) document.getElementById('addExpenseModal').classList.remove('open');
                     });
 
-                    // Переключение типа записи
                     document.getElementById('expenseTypeExpense').addEventListener('click', function() {
                         setExpenseType('expense');
                     });
@@ -3210,14 +3172,12 @@
                     });
                     setExpenseType('expense');
 
-                    // Показываем/скрываем поле цены для тарифа "Другой"
                     document.getElementById('manualChargeTariff').addEventListener('change', function() {
                         const container = document.getElementById('manualChargePriceContainer');
                         container.style.display = (this.value === 'other') ? 'block' : 'none';
                     });
                     document.getElementById('manualChargePriceContainer').style.display = 'none';
 
-                    // Модалка добавления скутера
                     const addScooterModal = document.getElementById('addScooterModal');
                     document.getElementById('addScooterBtn').addEventListener('click', function() {
                         addScooterModal.classList.add('open');
@@ -3240,7 +3200,6 @@
                         }
                     });
 
-                    // Модалка переименования
                     const renameScooterModal = document.getElementById('renameScooterModal');
                     document.getElementById('renameScooterCancelBtn').addEventListener('click', function() {
                         renameScooterModal.classList.remove('open');
@@ -3253,7 +3212,6 @@
                         if (e.target === this) renameScooterModal.classList.remove('open');
                     });
 
-                    // Настройки
                     [
                         ['fullRangeSetting', 'fullRange', false],
                         ['batteryCapacity', 'batteryCapacity', false],
@@ -3272,7 +3230,6 @@
                         });
                     });
 
-                    // Ручная установка пробега с последней зарядки
                     document.getElementById('setSinceChargeBtn').addEventListener('click', function() {
                         const val = parseFloat(document.getElementById('sinceChargeManual').value);
                         if (!isNaN(val)) setSinceChargeManually(val);
@@ -3308,7 +3265,6 @@
                         }, 1000);
                     });
 
-                    // Экспорт/Импорт (старые кнопки)
                     document.getElementById('exportCsvBtn').addEventListener('click', exportCSV);
                     document.getElementById('exportJsonBtn').addEventListener('click', exportJSON);
                     document.getElementById('importCsvBtn').addEventListener('click', function() {
@@ -3334,7 +3290,6 @@
                         this.value = '';
                     });
 
-                    // Статистика
                     const periodSelect = document.getElementById('periodSelect');
                     if (periodSelect) {
                         const savedPeriod = localStorage.getItem(STATS_PERIOD_STORAGE_KEY) || 'all';
