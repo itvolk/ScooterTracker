@@ -1,5 +1,5 @@
 // sw.js — Service Worker для офлайн-доступа
-const CACHE_NAME = 'scooter-tracker-v19';
+const CACHE_NAME = 'scooter-tracker-v20';
 const BASE = '/ScooterTracker/';
 
 const URLS_TO_CACHE = [
