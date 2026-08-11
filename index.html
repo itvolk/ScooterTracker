@@ -1533,30 +1533,33 @@
         }
 
         function applyTheme(mode) {
-            // Определяем, должна ли быть тёмная тема
-            let isDark = false;
+            let isDark;
             if (mode === 'dark') {
                 isDark = true;
             } else if (mode === 'light') {
                 isDark = false;
             } else if (mode === 'system') {
-                // Здесь важно: getSystemTheme() возвращает 'dark' или 'light'
-                isDark = (getSystemTheme() === 'dark');
+                // Явно получаем системную тему и сравниваем
+                const sys = getSystemTheme();
+                isDark = (sys === 'dark');
+                console.log('🔍 applyTheme(system): sys=' + sys + ', isDark=' + isDark);
+            } else {
+                isDark = false;
             }
-            
-            console.log('🎨 applyTheme: mode=' + mode + ', isDark=' + isDark + ', системная=' + getSystemTheme());
-            
+
+            console.log('🎨 Применяем тему: ' + (isDark ? 'тёмная' : 'светлая') + ' (режим: ' + mode + ')');
+
             document.body.classList.toggle('dark', isDark);
             const icon = document.getElementById('themeToggle');
             icon.textContent = isDark ? '☀️' : '🌙';
             updateThemeUI(mode);
-            
-            // Принудительная перерисовка
+
+            // Принудительная перерисовка для HyperOS
             document.body.style.transform = 'scale(0.999)';
             requestAnimationFrame(() => {
                 document.body.style.transform = 'scale(1)';
             });
-            
+
             // Перерисовка данных
             const data = loadActiveScooterData();
             if (typeof renderMain === 'function') renderMain(data);
